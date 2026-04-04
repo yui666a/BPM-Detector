@@ -15,6 +15,17 @@ async function init() {
 	self.postMessage({ type: "READY" });
 }
 
+function calculateBpmCurve(times: number[]): { time: number; bpm: number }[] {
+	const curve = [];
+	for (let i = 1; i < times.length; i++) {
+		const interval = times[i] - times[i - 1];
+		if (interval > 0) {
+			curve.push({ time: times[i], bpm: 60 / interval });
+		}
+	}
+	return curve;
+}
+
 function analyzeMusic(pcmData: Float32Array) {
 	if (!essentia) throw new Error("Essentia not initialized");
 
@@ -32,16 +43,7 @@ function analyzeMusic(pcmData: Float32Array) {
 		manual: false,
 	}));
 
-	const bpmCurve = [];
-	for (let i = 1; i < ticks.length; i++) {
-		const interval = ticks[i] - ticks[i - 1];
-		if (interval > 0) {
-			bpmCurve.push({
-				time: ticks[i],
-				bpm: 60 / interval,
-			});
-		}
-	}
+	const bpmCurve = calculateBpmCurve(ticks);
 
 	self.postMessage({
 		type: "RESULT",
@@ -89,16 +91,7 @@ function analyzeSE(pcmData: Float32Array, sampleRate: number) {
 		bpm = 60 / medianInterval;
 	}
 
-	const bpmCurve = [];
-	for (let i = 1; i < onsetTimes.length; i++) {
-		const interval = onsetTimes[i] - onsetTimes[i - 1];
-		if (interval > 0) {
-			bpmCurve.push({
-				time: onsetTimes[i],
-				bpm: 60 / interval,
-			});
-		}
-	}
+	const bpmCurve = calculateBpmCurve(onsetTimes);
 
 	self.postMessage({
 		type: "RESULT",
