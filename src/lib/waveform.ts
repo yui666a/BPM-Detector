@@ -1,5 +1,17 @@
 import type { Beat } from "@/types";
 
+/** Canvas drawing colors */
+const COLORS = {
+	waveform: "#4f46e5",
+	beatAuto: "#ef4444",
+	beatManual: "#f59e0b",
+	playhead: "#ffffff",
+} as const;
+
+/** Beat marker opacity range: base + confidence * range */
+const BEAT_OPACITY_BASE = 0.4;
+const BEAT_OPACITY_RANGE = 0.6;
+
 export interface DownsampleResult {
 	min: Float32Array;
 	max: Float32Array;
@@ -45,7 +57,7 @@ export function drawWaveform(
 	const { min, max } = downsample(slice, width);
 
 	ctx.clearRect(0, 0, width, height);
-	ctx.fillStyle = "#4f46e5";
+	ctx.fillStyle = COLORS.waveform;
 	const mid = height / 2;
 
 	for (let i = 0; i < min.length; i++) {
@@ -72,9 +84,9 @@ export function drawBeatMarkers(
 		if (beat.time < startTime || beat.time > endTime) continue;
 
 		const x = ((beat.time - startTime) / visibleDuration) * width;
-		ctx.strokeStyle = beat.manual ? "#f59e0b" : "#ef4444";
+		ctx.strokeStyle = beat.manual ? COLORS.beatManual : COLORS.beatAuto;
 		ctx.lineWidth = beat.manual ? 2 : 1;
-		ctx.globalAlpha = 0.4 + beat.confidence * 0.6;
+		ctx.globalAlpha = BEAT_OPACITY_BASE + beat.confidence * BEAT_OPACITY_RANGE;
 		ctx.beginPath();
 		ctx.moveTo(x, 0);
 		ctx.lineTo(x, height);
@@ -98,7 +110,7 @@ export function drawPlayhead(
 
 	if (x < 0 || x > width) return;
 
-	ctx.strokeStyle = "#ffffff";
+	ctx.strokeStyle = COLORS.playhead;
 	ctx.lineWidth = 2;
 	ctx.beginPath();
 	ctx.moveTo(x, 0);

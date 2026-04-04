@@ -1,3 +1,12 @@
+/** SE/SFX onset detection parameters */
+const SE_FRAME_SIZE = 2048;
+const SE_HOP_SIZE = 512;
+const SE_ENERGY_THRESHOLD = 0.3;
+const SE_DEFAULT_CONFIDENCE = 0.7;
+
+/** RhythmExtractor2013 confidence normalization (raw scale: 0–5.32) */
+const RHYTHM_CONFIDENCE_MAX = 5.32;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let essentia: any = null;
 
@@ -35,7 +44,7 @@ function analyzeMusic(pcmData: Float32Array) {
 	const bpm: number = rhythm.bpm;
 	const ticks: number[] = essentia.vectorToArray(rhythm.ticks);
 	// RhythmExtractor2013 returns confidence on a 0–5.32 scale; normalize to 0–1
-	const confidence: number = Math.min(rhythm.confidence / 5.32, 1);
+	const confidence: number = Math.min(rhythm.confidence / RHYTHM_CONFIDENCE_MAX, 1);
 
 	const beats = ticks.map((time) => ({
 		time,
@@ -54,14 +63,11 @@ function analyzeMusic(pcmData: Float32Array) {
 function analyzeSE(pcmData: Float32Array, sampleRate: number) {
 	if (!essentia) throw new Error("Essentia not initialized");
 
-	const frameSize = 2048;
-	const hopSize = 512;
 	const onsetTimes: number[] = [];
 	let prevEnergy = 0;
-	const threshold = 0.3;
 
-	for (let i = 0; i + frameSize < pcmData.length; i += hopSize) {
-		const frame = pcmData.slice(i, i + frameSize);
+	for (let i = 0; i + SE_FRAME_SIZE < pcmData.length; i += SE_HOP_SIZE) {
+		const frame = pcmData.slice(i, i + SE_FRAME_SIZE);
 		let energy = 0;
 		for (let j = 0; j < frame.length; j++) {
 			energy += frame[j] * frame[j];
@@ -69,7 +75,7 @@ function analyzeSE(pcmData: Float32Array, sampleRate: number) {
 		energy /= frame.length;
 
 		const diff = energy - prevEnergy;
-		if (diff > threshold && prevEnergy > 0) {
+		if (diff > SE_ENERGY_THRESHOLD && prevEnergy > 0) {
 			onsetTimes.push(i / sampleRate);
 		}
 		prevEnergy = energy;
@@ -77,7 +83,7 @@ function analyzeSE(pcmData: Float32Array, sampleRate: number) {
 
 	const beats = onsetTimes.map((time) => ({
 		time,
-		confidence: 0.7,
+		confidence: SE_DEFAULT_CONFIDENCE,
 		manual: false,
 	}));
 
@@ -95,7 +101,7 @@ function analyzeSE(pcmData: Float32Array, sampleRate: number) {
 
 	self.postMessage({
 		type: "RESULT",
-		data: { bpm, beats, bpmCurve, confidence: 0.7 },
+		data: { bpm, beats, bpmCurve, confidence: SE_DEFAULT_CONFIDENCE },
 	});
 }
 
