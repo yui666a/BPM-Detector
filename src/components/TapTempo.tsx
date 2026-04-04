@@ -1,7 +1,10 @@
 "use client";
 
+import { useAtomValue, useSetAtom } from "jotai";
 import React from "react";
 import { appendTapTime, calculateTapBpm, TAP_RESET_MS } from "@/lib/tapTempo";
+import { currentTimeAtom, playbackStateAtom } from "@/store/audioAtoms";
+import { tapMarkersAtom } from "@/store/uiAtoms";
 
 function isInteractiveTarget(target: EventTarget | null): boolean {
 	if (!(target instanceof HTMLElement)) return false;
@@ -16,14 +19,20 @@ interface TapTempoProps {
 
 export function TapTempo({ now = () => performance.now() }: TapTempoProps) {
 	const [tapTimes, setTapTimes] = React.useState<number[]>([]);
+	const currentTime = useAtomValue(currentTimeAtom);
+	const playbackState = useAtomValue(playbackStateAtom);
+	const setTapMarkers = useSetAtom(tapMarkersAtom);
 
 	const getNow = React.useCallback(() => now(), [now]);
 
 	const registerTap = React.useCallback(
 		(tapTime = getNow()) => {
 			setTapTimes((previousTapTimes) => appendTapTime(previousTapTimes, tapTime));
+			if (playbackState === "playing") {
+				setTapMarkers((previousMarkers) => [...previousMarkers, currentTime]);
+			}
 		},
-		[getNow],
+		[currentTime, getNow, playbackState, setTapMarkers],
 	);
 
 	const bpm = React.useMemo(() => calculateTapBpm(tapTimes), [tapTimes]);

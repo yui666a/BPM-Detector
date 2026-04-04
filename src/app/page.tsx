@@ -99,8 +99,6 @@ export default function Home() {
 				</div>
 			)}
 
-			<TapTempo />
-
 			<BpmDisplay />
 
 			<WaveformView />
@@ -108,6 +106,8 @@ export default function Home() {
 			<PlaybackControls />
 
 			<BpmGraph />
+
+			<TapTempo />
 		</main>
 	);
 }

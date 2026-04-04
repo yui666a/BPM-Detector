@@ -5,6 +5,7 @@ const COLORS = {
 	waveform: "#4f46e5",
 	beatAuto: "#ef4444",
 	beatManual: "#f59e0b",
+	tapMarker: "#fbbf24",
 	playhead: "#ffffff",
 } as const;
 
@@ -92,6 +93,36 @@ export function drawBeatMarkers(
 		ctx.lineTo(x, height);
 		ctx.stroke();
 	}
+	ctx.globalAlpha = 1;
+}
+
+export function drawTapMarkers(
+	ctx: CanvasRenderingContext2D,
+	tapMarkers: number[],
+	duration: number,
+	width: number,
+	height: number,
+	zoom: number,
+	scrollOffset: number,
+) {
+	const visibleDuration = duration / zoom;
+	const startTime = scrollOffset * duration;
+	const endTime = startTime + visibleDuration;
+
+	ctx.strokeStyle = COLORS.tapMarker;
+	ctx.lineWidth = 2;
+	ctx.globalAlpha = 0.85;
+
+	for (const markerTime of tapMarkers) {
+		if (markerTime < startTime || markerTime > endTime) continue;
+
+		const x = ((markerTime - startTime) / visibleDuration) * width;
+		ctx.beginPath();
+		ctx.moveTo(x, 0);
+		ctx.lineTo(x, height);
+		ctx.stroke();
+	}
+
 	ctx.globalAlpha = 1;
 }
 

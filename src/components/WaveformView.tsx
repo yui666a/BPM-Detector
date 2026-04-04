@@ -4,10 +4,10 @@ import { useAtom, useAtomValue } from "jotai";
 import { useCallback, useEffect, useRef } from "react";
 import { extractMonoData } from "@/engine/audio";
 import { useCanvasGesture } from "@/hooks/useCanvasGesture";
-import { drawBeatMarkers, drawPlayhead, drawWaveform } from "@/lib/waveform";
+import { drawBeatMarkers, drawPlayhead, drawTapMarkers, drawWaveform } from "@/lib/waveform";
 import { beatsAtom } from "@/store/analysisAtoms";
 import { audioBufferAtom, currentTimeAtom, durationAtom } from "@/store/audioAtoms";
-import { scrollOffsetAtom, zoomAtom } from "@/store/uiAtoms";
+import { scrollOffsetAtom, tapMarkersAtom, zoomAtom } from "@/store/uiAtoms";
 
 const CANVAS_HEIGHT = 200;
 
@@ -18,6 +18,7 @@ export function WaveformView() {
 	const duration = useAtomValue(durationAtom);
 	const currentTime = useAtomValue(currentTimeAtom);
 	const beats = useAtomValue(beatsAtom);
+	const tapMarkers = useAtomValue(tapMarkersAtom);
 	const [zoom, setZoom] = useAtom(zoomAtom);
 	const [scrollOffset, setScrollOffset] = useAtom(scrollOffsetAtom);
 	const monoDataRef = useRef<Float32Array | null>(null);
@@ -43,8 +44,9 @@ export function WaveformView() {
 		ctx.clearRect(0, 0, width, height);
 		drawWaveform(ctx, monoDataRef.current, width, height, zoom, scrollOffset);
 		drawBeatMarkers(ctx, beats, duration, width, height, zoom, scrollOffset);
+		drawTapMarkers(ctx, tapMarkers, duration, width, height, zoom, scrollOffset);
 		drawPlayhead(ctx, currentTime, duration, width, height, zoom, scrollOffset);
-	}, [beats, currentTime, duration, zoom, scrollOffset]);
+	}, [beats, currentTime, duration, scrollOffset, tapMarkers, zoom]);
 
 	useEffect(() => {
 		const rafId = requestAnimationFrame(draw);
