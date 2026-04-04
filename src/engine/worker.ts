@@ -1,11 +1,17 @@
-// @ts-expect-error essentia.js has no TypeScript types
-import { Essentia, EssentiaWASM } from "essentia.js";
-
-let essentia: Essentia | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let essentia: any = null;
 
 async function init() {
-	const wasmModule = await EssentiaWASM();
-	essentia = new Essentia(wasmModule);
+	// essentia.js ES builds:
+	// - essentia-wasm.es.js: named export `EssentiaWASM` which is the Emscripten Module object (not a function)
+	// - essentia.js-core.es.js: default export `Essentia` constructor
+	// @ts-expect-error essentia.js has no proper ESM type exports
+	const { EssentiaWASM } = await import("essentia.js/dist/essentia-wasm.es.js");
+	// @ts-expect-error essentia.js has no proper ESM type exports
+	const { default: Essentia } = await import("essentia.js/dist/essentia.js-core.es.js");
+
+	// EssentiaWASM is already the initialized Module object
+	essentia = new Essentia(EssentiaWASM);
 	self.postMessage({ type: "READY" });
 }
 
