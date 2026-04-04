@@ -47,4 +47,27 @@ describe("TapTempo", () => {
 
 		expect(store.get(tapMarkersAtom)).toEqual([12.34]);
 	});
+
+	it("clears both tap history and stored markers", () => {
+		const tapTimes = [0, 500];
+		let tapIndex = 0;
+		const store = createStore();
+		store.set(playbackStateAtom, "playing");
+		store.set(currentTimeAtom, 8.5);
+
+		render(
+			React.createElement(
+				Provider,
+				{ store },
+				React.createElement(TapTempo, { now: () => tapTimes[tapIndex++] ?? 0 }),
+			),
+		);
+
+		fireEvent.click(screen.getByRole("button", { name: "Tap Tempo" }));
+		fireEvent.click(screen.getByRole("button", { name: "Tap Tempo" }));
+		fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+
+		expect(screen.getByText("--")).toBeTruthy();
+		expect(store.get(tapMarkersAtom)).toEqual([]);
+	});
 });

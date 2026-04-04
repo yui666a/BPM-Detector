@@ -36,6 +36,12 @@ export function TapTempo({ now = () => performance.now() }: TapTempoProps) {
 	);
 
 	const bpm = React.useMemo(() => calculateTapBpm(tapTimes), [tapTimes]);
+	const hasTapData = tapTimes.length > 0;
+
+	const clearTapTempo = React.useCallback(() => {
+		setTapTimes([]);
+		setTapMarkers([]);
+	}, [setTapMarkers]);
 
 	React.useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
@@ -70,13 +76,23 @@ export function TapTempo({ now = () => performance.now() }: TapTempoProps) {
 					</p>
 				</div>
 
-				<button
-					type="button"
-					onClick={() => registerTap()}
-					className="rounded-xl bg-amber-500 px-6 py-4 text-base font-semibold text-gray-950 transition-colors hover:bg-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
-				>
-					Tap Tempo
-				</button>
+				<div className="flex gap-3">
+					<button
+						type="button"
+						onClick={() => registerTap()}
+						className="rounded-xl bg-amber-500 px-6 py-4 text-base font-semibold text-gray-950 transition-colors hover:bg-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
+					>
+						Tap Tempo
+					</button>
+					<button
+						type="button"
+						onClick={clearTapTempo}
+						disabled={!hasTapData}
+						className="rounded-xl border border-gray-700 px-5 py-4 text-base font-medium text-gray-200 transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
+					>
+						Clear
+					</button>
+				</div>
 			</div>
 		</section>
 	);
