@@ -154,12 +154,13 @@ export function WaveformView() {
 		[findBeatAtX, pushUndo, setBeats],
 	);
 
-	// Use native event listener with { passive: false } so preventDefault() works
-	// React's onWheel is passive by default and cannot prevent browser zoom
+	// Native event listeners with { passive: false } so preventDefault() works.
+	// React's synthetic events are passive and cannot prevent browser zoom/scroll.
 	useEffect(() => {
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 
+		// --- Mouse wheel: Ctrl/Cmd+wheel = zoom, horizontal scroll = pan ---
 		const handleWheel = (e: WheelEvent) => {
 			e.preventDefault();
 			if (e.ctrlKey || e.metaKey) {
@@ -169,8 +170,50 @@ export function WaveformView() {
 			}
 		};
 
+		// --- Pinch zoom (trackpad on Mac + touch on iPhone/iPad) ---
+		// Trackpad pinch fires as wheel events with ctrlKey=true (handled above).
+		// Touch pinch uses touchstart/touchmove/touchend.
+		let lastPinchDist = 0;
+
+		const getTouchDist = (e: TouchEvent): number => {
+			const [a, b] = [e.touches[0], e.touches[1]];
+			return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+		};
+
+		const handleTouchStart = (e: TouchEvent) => {
+			if (e.touches.length === 2) {
+				e.preventDefault();
+				lastPinchDist = getTouchDist(e);
+			}
+		};
+
+		const handleTouchMove = (e: TouchEvent) => {
+			if (e.touches.length === 2) {
+				e.preventDefault();
+				const dist = getTouchDist(e);
+				if (lastPinchDist > 0) {
+					const scale = dist / lastPinchDist;
+					setZoom((z) => Math.max(1, Math.min(z * scale, 100)));
+				}
+				lastPinchDist = dist;
+			}
+		};
+
+		const handleTouchEnd = () => {
+			lastPinchDist = 0;
+		};
+
 		canvas.addEventListener("wheel", handleWheel, { passive: false });
-		return () => canvas.removeEventListener("wheel", handleWheel);
+		canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
+		canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
+		canvas.addEventListener("touchend", handleTouchEnd);
+
+		return () => {
+			canvas.removeEventListener("wheel", handleWheel);
+			canvas.removeEventListener("touchstart", handleTouchStart);
+			canvas.removeEventListener("touchmove", handleTouchMove);
+			canvas.removeEventListener("touchend", handleTouchEnd);
+		};
 	}, [zoom, setZoom, setScrollOffset]);
 
 	if (!audioBuffer) return null;
