@@ -18,7 +18,7 @@ import {
 	fileNameAtom,
 	playbackStateAtom,
 } from "@/store/audioAtoms";
-import { scrollOffsetAtom, undoStackAtom, zoomAtom } from "@/store/uiAtoms";
+import { errorMessageAtom, scrollOffsetAtom, undoStackAtom, zoomAtom } from "@/store/uiAtoms";
 
 export default function Home() {
 	const setAudioBuffer = useSetAtom(audioBufferAtom);
@@ -31,13 +31,16 @@ export default function Home() {
 	const setZoom = useSetAtom(zoomAtom);
 	const setScrollOffset = useSetAtom(scrollOffsetAtom);
 	const setUndoStack = useSetAtom(undoStackAtom);
+	const setErrorMessage = useSetAtom(errorMessageAtom);
 	const analysisMode = useAtomValue(analysisModeAtom);
 	const isAnalyzing = useAtomValue(isAnalyzingAtom);
+	const errorMessage = useAtomValue(errorMessageAtom);
 	const managerRef = useRef<AnalysisManager | null>(null);
 
 	const handleFileSelect = useCallback(
 		async (file: File) => {
 			try {
+				setErrorMessage(null);
 				setIsAnalyzing(true);
 				setZoom(1);
 				setScrollOffset(0);
@@ -58,7 +61,13 @@ export default function Home() {
 				const result = await managerRef.current.analyze(monoData, buffer.sampleRate, analysisMode);
 				setAnalysisResult(result);
 			} catch (error) {
-				console.error("Analysis failed:", error);
+				const message =
+					error instanceof DOMException
+						? "This file format is not supported"
+						: error instanceof Error
+							? error.message
+							: "An unexpected error occurred";
+				setErrorMessage(message);
 			} finally {
 				setIsAnalyzing(false);
 			}
@@ -75,6 +84,7 @@ export default function Home() {
 			setZoom,
 			setScrollOffset,
 			setUndoStack,
+			setErrorMessage,
 		],
 	);
 
@@ -86,6 +96,12 @@ export default function Home() {
 			</header>
 
 			<FileDropZone onFileSelect={handleFileSelect} disabled={isAnalyzing} />
+
+			{errorMessage && (
+				<div className="rounded-lg bg-red-900/30 px-4 py-3 text-sm text-red-300">
+					{errorMessage}
+				</div>
+			)}
 
 			<BpmDisplay />
 

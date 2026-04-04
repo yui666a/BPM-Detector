@@ -9,3 +9,5 @@ interface UndoEntry {
 }
 
 export const undoStackAtom = atom<UndoEntry[]>([]);
+
+export const errorMessageAtom = atom<string | null>(null);
