@@ -23,7 +23,8 @@ function analyzeMusic(pcmData: Float32Array) {
 
 	const bpm: number = rhythm.bpm;
 	const ticks: number[] = essentia.vectorToArray(rhythm.ticks);
-	const confidence: number = rhythm.confidence;
+	// RhythmExtractor2013 returns confidence on a 0–5.32 scale; normalize to 0–1
+	const confidence: number = Math.min(rhythm.confidence / 5.32, 1);
 
 	const beats = ticks.map((time) => ({
 		time,
