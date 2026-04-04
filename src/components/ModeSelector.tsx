@@ -20,9 +20,7 @@ export function ModeSelector() {
 					type="button"
 					onClick={() => setMode(m.value)}
 					className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
-						mode === m.value
-							? "bg-indigo-600 text-white"
-							: "text-gray-400 hover:text-gray-200"
+						mode === m.value ? "bg-indigo-600 text-white" : "text-gray-400 hover:text-gray-200"
 					}`}
 				>
 					{m.label}
