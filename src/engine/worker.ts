@@ -108,13 +108,18 @@ function analyzeSE(pcmData: Float32Array, sampleRate: number) {
 self.onmessage = async (event: MessageEvent) => {
 	const { type, pcmData, sampleRate, mode } = event.data;
 
-	if (type === "INIT") {
-		await init();
-	} else if (type === "ANALYZE") {
-		if (mode === "music") {
-			analyzeMusic(pcmData);
-		} else {
-			analyzeSE(pcmData, sampleRate);
+	try {
+		if (type === "INIT") {
+			await init();
+		} else if (type === "ANALYZE") {
+			if (mode === "music") {
+				analyzeMusic(pcmData);
+			} else {
+				analyzeSE(pcmData, sampleRate);
+			}
 		}
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "Unknown error";
+		self.postMessage({ type: "ERROR", message });
 	}
 };

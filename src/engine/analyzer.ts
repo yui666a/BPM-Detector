@@ -8,7 +8,7 @@ export class AnalysisManager {
 	init(): Promise<void> {
 		if (this.readyPromise) return this.readyPromise;
 
-		this.readyPromise = new Promise<void>((resolve) => {
+		this.readyPromise = new Promise<void>((resolve, reject) => {
 			this.worker = new Worker(new URL("./worker.ts", import.meta.url), {
 				type: "module",
 			});
@@ -17,6 +17,9 @@ export class AnalysisManager {
 					this.ready = true;
 					resolve();
 				}
+			};
+			this.worker.onerror = (event: ErrorEvent) => {
+				reject(new Error(`Worker initialization failed: ${event.message}`));
 			};
 			this.worker.postMessage({ type: "INIT" });
 		});
@@ -33,14 +36,22 @@ export class AnalysisManager {
 			await this.init();
 		}
 
-		return new Promise<AnalysisResult>((resolve) => {
+		return new Promise<AnalysisResult>((resolve, reject) => {
 			const handler = (event: MessageEvent) => {
 				if (event.data.type === "RESULT") {
 					this.worker?.removeEventListener("message", handler);
 					resolve(event.data.data as AnalysisResult);
+				} else if (event.data.type === "ERROR") {
+					this.worker?.removeEventListener("message", handler);
+					reject(new Error(event.data.message ?? "Analysis failed"));
 				}
 			};
+			const errorHandler = (event: ErrorEvent) => {
+				this.worker?.removeEventListener("message", handler);
+				reject(new Error(`Worker error: ${event.message}`));
+			};
 			this.worker?.addEventListener("message", handler);
+			this.worker?.addEventListener("error", errorHandler, { once: true });
 			this.worker?.postMessage({ type: "ANALYZE", pcmData, sampleRate, mode }, [pcmData.buffer]);
 		});
 	}
