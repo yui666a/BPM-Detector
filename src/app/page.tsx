@@ -7,6 +7,7 @@ import { BpmGraph } from "@/components/BpmGraph";
 import { FileDropZone } from "@/components/FileDropZone";
 import { ModeSelector } from "@/components/ModeSelector";
 import { PlaybackControls } from "@/components/PlaybackControls";
+import { TapTempo } from "@/components/TapTempo";
 import { WaveformView } from "@/components/WaveformView";
 import { AnalysisManager } from "@/engine/analyzer";
 import { decodeAudioFile, extractMonoData } from "@/engine/audio";
@@ -97,6 +98,8 @@ export default function Home() {
 					{errorMessage}
 				</div>
 			)}
+
+			<TapTempo />
 
 			<BpmDisplay />
 
