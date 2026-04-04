@@ -14,3 +14,10 @@ export const setAnalysisResultAtom = atom(null, (_get, set, result: AnalysisResu
 	set(beatsAtom, result.beats);
 	set(bpmCurveAtom, result.bpmCurve);
 });
+
+export const resetAnalysisResultAtom = atom(null, (_get, set) => {
+	set(bpmAtom, 0);
+	set(confidenceAtom, 0);
+	set(beatsAtom, []);
+	set(bpmCurveAtom, []);
+});

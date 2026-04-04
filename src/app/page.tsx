@@ -1,7 +1,7 @@
 "use client";
 
 import { useAtomValue, useSetAtom } from "jotai";
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { BpmDisplay } from "@/components/BpmDisplay";
 import { BpmGraph } from "@/components/BpmGraph";
 import { FileDropZone } from "@/components/FileDropZone";
@@ -10,48 +10,44 @@ import { PlaybackControls } from "@/components/PlaybackControls";
 import { WaveformView } from "@/components/WaveformView";
 import { AnalysisManager } from "@/engine/analyzer";
 import { decodeAudioFile, extractMonoData } from "@/engine/audio";
-import { analysisModeAtom, isAnalyzingAtom, setAnalysisResultAtom } from "@/store/analysisAtoms";
 import {
-	audioBufferAtom,
-	currentTimeAtom,
-	durationAtom,
-	fileNameAtom,
-	playbackStateAtom,
-} from "@/store/audioAtoms";
-import { errorMessageAtom, scrollOffsetAtom, undoStackAtom, zoomAtom } from "@/store/uiAtoms";
+	analysisModeAtom,
+	isAnalyzingAtom,
+	resetAnalysisResultAtom,
+	setAnalysisResultAtom,
+} from "@/store/analysisAtoms";
+import { resetAudioStateAtom, setLoadedAudioAtom } from "@/store/audioAtoms";
+import { errorMessageAtom, resetUiStateAtom } from "@/store/uiAtoms";
 
 export default function Home() {
-	const setAudioBuffer = useSetAtom(audioBufferAtom);
-	const setFileName = useSetAtom(fileNameAtom);
-	const setDuration = useSetAtom(durationAtom);
-	const setCurrentTime = useSetAtom(currentTimeAtom);
-	const setPlaybackState = useSetAtom(playbackStateAtom);
+	const resetAudioState = useSetAtom(resetAudioStateAtom);
+	const setLoadedAudio = useSetAtom(setLoadedAudioAtom);
 	const setIsAnalyzing = useSetAtom(isAnalyzingAtom);
 	const setAnalysisResult = useSetAtom(setAnalysisResultAtom);
-	const setZoom = useSetAtom(zoomAtom);
-	const setScrollOffset = useSetAtom(scrollOffsetAtom);
-	const setUndoStack = useSetAtom(undoStackAtom);
+	const resetAnalysisResult = useSetAtom(resetAnalysisResultAtom);
+	const resetUiState = useSetAtom(resetUiStateAtom);
 	const setErrorMessage = useSetAtom(errorMessageAtom);
 	const analysisMode = useAtomValue(analysisModeAtom);
 	const isAnalyzing = useAtomValue(isAnalyzingAtom);
 	const errorMessage = useAtomValue(errorMessageAtom);
 	const managerRef = useRef<AnalysisManager | null>(null);
 
+	useEffect(() => {
+		return () => {
+			managerRef.current?.terminate();
+		};
+	}, []);
+
 	const handleFileSelect = useCallback(
 		async (file: File) => {
 			try {
-				setErrorMessage(null);
+				resetUiState();
 				setIsAnalyzing(true);
-				setZoom(1);
-				setScrollOffset(0);
-				setCurrentTime(0);
-				setPlaybackState("idle");
-				setUndoStack([]);
+				resetAudioState();
+				resetAnalysisResult();
 
 				const buffer = await decodeAudioFile(file);
-				setAudioBuffer(buffer);
-				setFileName(file.name);
-				setDuration(buffer.duration);
+				setLoadedAudio({ buffer, fileName: file.name });
 
 				if (!managerRef.current) {
 					managerRef.current = new AnalysisManager();
@@ -59,8 +55,11 @@ export default function Home() {
 
 				const monoData = extractMonoData(buffer);
 				const result = await managerRef.current.analyze(monoData, buffer.sampleRate, analysisMode);
+				setErrorMessage(null);
 				setAnalysisResult(result);
 			} catch (error) {
+				resetAudioState();
+				resetAnalysisResult();
 				const message =
 					error instanceof DOMException
 						? "This file format is not supported"
@@ -74,16 +73,12 @@ export default function Home() {
 		},
 		[
 			analysisMode,
-			setAudioBuffer,
-			setFileName,
-			setDuration,
-			setCurrentTime,
-			setPlaybackState,
+			resetAnalysisResult,
+			resetAudioState,
+			resetUiState,
+			setLoadedAudio,
 			setIsAnalyzing,
 			setAnalysisResult,
-			setZoom,
-			setScrollOffset,
-			setUndoStack,
 			setErrorMessage,
 		],
 	);

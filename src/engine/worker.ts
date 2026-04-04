@@ -7,8 +7,21 @@ const SE_DEFAULT_CONFIDENCE = 0.7;
 /** RhythmExtractor2013 confidence normalization (raw scale: 0–5.32) */
 const RHYTHM_CONFIDENCE_MAX = 5.32;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let essentia: any = null;
+interface EssentiaInstance {
+	arrayToVector(data: Float32Array): unknown;
+	RhythmExtractor2013(signal: unknown): {
+		bpm: number;
+		ticks: unknown;
+		confidence: number;
+	};
+	vectorToArray(vector: unknown): number[];
+}
+
+interface EssentiaConstructor {
+	new (wasmModule: unknown): EssentiaInstance;
+}
+
+let essentia: EssentiaInstance | null = null;
 
 async function init() {
 	// essentia.js ES builds:
@@ -16,8 +29,9 @@ async function init() {
 	// - essentia.js-core.es.js: default export `Essentia` constructor
 	// @ts-expect-error essentia.js has no proper ESM type exports
 	const { EssentiaWASM } = await import("essentia.js/dist/essentia-wasm.es.js");
-	// @ts-expect-error essentia.js has no proper ESM type exports
-	const { default: Essentia } = await import("essentia.js/dist/essentia.js-core.es.js");
+	const { default: Essentia } = (await import("essentia.js/dist/essentia.js-core.es.js")) as {
+		default: EssentiaConstructor;
+	};
 
 	// EssentiaWASM is already the initialized Module object
 	essentia = new Essentia(EssentiaWASM);

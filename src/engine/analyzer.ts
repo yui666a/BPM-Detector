@@ -37,21 +37,26 @@ export class AnalysisManager {
 		}
 
 		return new Promise<AnalysisResult>((resolve, reject) => {
+			const cleanup = () => {
+				this.worker?.removeEventListener("message", handler);
+				this.worker?.removeEventListener("error", errorHandler);
+			};
+
 			const handler = (event: MessageEvent) => {
 				if (event.data.type === "RESULT") {
-					this.worker?.removeEventListener("message", handler);
+					cleanup();
 					resolve(event.data.data as AnalysisResult);
 				} else if (event.data.type === "ERROR") {
-					this.worker?.removeEventListener("message", handler);
+					cleanup();
 					reject(new Error(event.data.message ?? "Analysis failed"));
 				}
 			};
 			const errorHandler = (event: ErrorEvent) => {
-				this.worker?.removeEventListener("message", handler);
+				cleanup();
 				reject(new Error(`Worker error: ${event.message}`));
 			};
 			this.worker?.addEventListener("message", handler);
-			this.worker?.addEventListener("error", errorHandler, { once: true });
+			this.worker?.addEventListener("error", errorHandler);
 			this.worker?.postMessage({ type: "ANALYZE", pcmData, sampleRate, mode }, [pcmData.buffer]);
 		});
 	}

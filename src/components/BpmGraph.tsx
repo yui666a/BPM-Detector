@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
 import { useAtomValue } from "jotai";
+import { useMemo } from "react";
 import {
 	Line,
 	LineChart,
@@ -60,9 +60,7 @@ export function BpmGraph() {
 						contentStyle={{ backgroundColor: "#1f2937", border: "none", borderRadius: 8 }}
 					/>
 					<ReferenceLine y={bpm} stroke="#6366f1" strokeDasharray="3 3" />
-					{showPlayhead && (
-						<ReferenceLine x={currentTime} stroke="#ffffff" strokeWidth={2} />
-					)}
+					{showPlayhead && <ReferenceLine x={currentTime} stroke="#ffffff" strokeWidth={2} />}
 					<Line
 						type="monotone"
 						dataKey="bpm"

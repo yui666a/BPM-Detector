@@ -27,12 +27,17 @@ export function WaveformView() {
 	useEffect(() => {
 		if (audioBuffer) {
 			monoDataRef.current = extractMonoData(audioBuffer);
+		} else {
+			monoDataRef.current = null;
 		}
 	}, [audioBuffer]);
 
-	const pushUndo = useCallback(() => {
-		setUndoStack((stack) => [...stack, { beats: [...beats] }]);
-	}, [beats, setUndoStack]);
+	const pushUndo = useCallback(
+		(snapshot: typeof beats) => {
+			setUndoStack((stack) => [...stack, { beats: snapshot }]);
+		},
+		[setUndoStack],
+	);
 
 	// --- Drawing ---
 	const draw = useCallback(() => {

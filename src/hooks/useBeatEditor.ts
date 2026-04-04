@@ -9,7 +9,7 @@ interface UseBeatEditorOptions {
 	canvasRef: RefObject<HTMLCanvasElement | null>;
 	beats: Beat[];
 	setBeats: (fn: (prev: Beat[]) => Beat[]) => void;
-	pushUndo: () => void;
+	pushUndo: (snapshot: Beat[]) => void;
 	duration: number;
 	zoom: number;
 	scrollOffset: number;
@@ -24,7 +24,7 @@ export function useBeatEditor({
 	zoom,
 	scrollOffset,
 }: UseBeatEditorOptions) {
-	const draggingRef = useRef<{ index: number } | null>(null);
+	const draggingRef = useRef<{ index: number; originalBeats: Beat[] } | null>(null);
 
 	const findBeatAtX = useCallback(
 		(x: number): number => {
@@ -49,10 +49,13 @@ export function useBeatEditor({
 			const x = e.clientX - rect.left;
 			const index = findBeatAtX(x);
 			if (index >= 0) {
-				draggingRef.current = { index };
+				draggingRef.current = {
+					index,
+					originalBeats: beats.map((beat) => ({ ...beat })),
+				};
 			}
 		},
-		[canvasRef, findBeatAtX],
+		[beats, canvasRef, findBeatAtX],
 	);
 
 	const handleMouseMove = useCallback(
@@ -74,10 +77,13 @@ export function useBeatEditor({
 
 	const handleMouseUp = useCallback(() => {
 		if (draggingRef.current) {
-			pushUndo();
+			const { index, originalBeats } = draggingRef.current;
+			if (beats[index]?.time !== originalBeats[index]?.time) {
+				pushUndo(originalBeats);
+			}
 			draggingRef.current = null;
 		}
-	}, [pushUndo]);
+	}, [beats, pushUndo]);
 
 	const handleDoubleClick = useCallback(
 		(e: React.MouseEvent) => {
@@ -87,11 +93,11 @@ export function useBeatEditor({
 			const x = e.clientX - rect.left;
 			const time = xToTime(x, duration, canvas.width, zoom, scrollOffset);
 
-			pushUndo();
+			pushUndo(beats.map((beat) => ({ ...beat })));
 			const newBeat: Beat = { time, confidence: 1, manual: true };
 			setBeats((prev) => [...prev, newBeat].sort((a, b) => a.time - b.time));
 		},
-		[canvasRef, duration, zoom, scrollOffset, pushUndo, setBeats],
+		[beats, canvasRef, duration, zoom, scrollOffset, pushUndo, setBeats],
 	);
 
 	const handleContextMenu = useCallback(
@@ -102,11 +108,11 @@ export function useBeatEditor({
 			const x = e.clientX - rect.left;
 			const index = findBeatAtX(x);
 			if (index >= 0) {
-				pushUndo();
+				pushUndo(beats.map((beat) => ({ ...beat })));
 				setBeats((prev) => prev.filter((_, i) => i !== index));
 			}
 		},
-		[canvasRef, findBeatAtX, pushUndo, setBeats],
+		[beats, canvasRef, findBeatAtX, pushUndo, setBeats],
 	);
 
 	return {
