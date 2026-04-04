@@ -1,14 +1,13 @@
 "use client";
 
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import { useCallback, useEffect, useRef } from "react";
 import { extractMonoData } from "@/engine/audio";
-import { useBeatEditor } from "@/hooks/useBeatEditor";
 import { useCanvasGesture } from "@/hooks/useCanvasGesture";
 import { drawBeatMarkers, drawPlayhead, drawWaveform } from "@/lib/waveform";
 import { beatsAtom } from "@/store/analysisAtoms";
 import { audioBufferAtom, currentTimeAtom, durationAtom } from "@/store/audioAtoms";
-import { scrollOffsetAtom, undoStackAtom, zoomAtom } from "@/store/uiAtoms";
+import { scrollOffsetAtom, zoomAtom } from "@/store/uiAtoms";
 
 const CANVAS_HEIGHT = 200;
 
@@ -18,10 +17,9 @@ export function WaveformView() {
 	const audioBuffer = useAtomValue(audioBufferAtom);
 	const duration = useAtomValue(durationAtom);
 	const currentTime = useAtomValue(currentTimeAtom);
-	const [beats, setBeats] = useAtom(beatsAtom);
+	const beats = useAtomValue(beatsAtom);
 	const [zoom, setZoom] = useAtom(zoomAtom);
 	const [scrollOffset, setScrollOffset] = useAtom(scrollOffsetAtom);
-	const setUndoStack = useSetAtom(undoStackAtom);
 	const monoDataRef = useRef<Float32Array | null>(null);
 
 	useEffect(() => {
@@ -31,13 +29,6 @@ export function WaveformView() {
 			monoDataRef.current = null;
 		}
 	}, [audioBuffer]);
-
-	const pushUndo = useCallback(
-		(snapshot: typeof beats) => {
-			setUndoStack((stack) => [...stack, { beats: snapshot }]);
-		},
-		[setUndoStack],
-	);
 
 	// --- Drawing ---
 	const draw = useCallback(() => {
@@ -79,23 +70,9 @@ export function WaveformView() {
 	// --- Gestures (wheel zoom, pinch zoom, pan) ---
 	useCanvasGesture(canvasRef, zoom, setZoom, setScrollOffset);
 
-	// --- Beat editing (drag, add, delete) ---
-	const { handleMouseDown, handleMouseMove, handleMouseUp, handleDoubleClick, handleContextMenu } =
-		useBeatEditor({ canvasRef, beats, setBeats, pushUndo, duration, zoom, scrollOffset });
-
 	return (
 		<div ref={containerRef} className={`w-full ${audioBuffer ? "" : "hidden"}`}>
-			<canvas
-				ref={canvasRef}
-				height={CANVAS_HEIGHT}
-				className="w-full cursor-crosshair rounded-lg bg-gray-900"
-				onMouseDown={handleMouseDown}
-				onMouseMove={handleMouseMove}
-				onMouseUp={handleMouseUp}
-				onMouseLeave={handleMouseUp}
-				onDoubleClick={handleDoubleClick}
-				onContextMenu={handleContextMenu}
-			/>
+			<canvas ref={canvasRef} height={CANVAS_HEIGHT} className="w-full rounded-lg bg-gray-900" />
 		</div>
 	);
 }

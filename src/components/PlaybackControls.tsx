@@ -4,22 +4,18 @@ import { useAtom, useAtomValue } from "jotai";
 import { useCallback, useEffect, useRef } from "react";
 import { createPlayback } from "@/engine/audio";
 import { formatTime } from "@/lib/format";
-import { beatsAtom } from "@/store/analysisAtoms";
 import {
 	audioBufferAtom,
 	currentTimeAtom,
 	durationAtom,
 	playbackStateAtom,
 } from "@/store/audioAtoms";
-import { undoStackAtom } from "@/store/uiAtoms";
 
 export function PlaybackControls() {
 	const audioBuffer = useAtomValue(audioBufferAtom);
 	const duration = useAtomValue(durationAtom);
 	const [playbackState, setPlaybackState] = useAtom(playbackStateAtom);
 	const [currentTime, setCurrentTime] = useAtom(currentTimeAtom);
-	const [_beats, setBeats] = useAtom(beatsAtom);
-	const [undoStack, setUndoStack] = useAtom(undoStackAtom);
 	const playbackRef = useRef<ReturnType<typeof createPlayback> | null>(null);
 
 	useEffect(() => {
@@ -58,24 +54,6 @@ export function PlaybackControls() {
 		[playbackState, setCurrentTime],
 	);
 
-	const handleUndo = useCallback(() => {
-		if (undoStack.length === 0) return;
-		const prev = undoStack[undoStack.length - 1];
-		setBeats(prev.beats);
-		setUndoStack((stack) => stack.slice(0, -1));
-	}, [undoStack, setBeats, setUndoStack]);
-
-	useEffect(() => {
-		const handler = (e: KeyboardEvent) => {
-			if ((e.metaKey || e.ctrlKey) && e.key === "z") {
-				e.preventDefault();
-				handleUndo();
-			}
-		};
-		window.addEventListener("keydown", handler);
-		return () => window.removeEventListener("keydown", handler);
-	}, [handleUndo]);
-
 	if (!audioBuffer) return null;
 
 	return (
@@ -98,14 +76,6 @@ export function PlaybackControls() {
 						&#9654; Play
 					</button>
 				)}
-				<button
-					type="button"
-					onClick={handleUndo}
-					disabled={undoStack.length === 0}
-					className="rounded-lg bg-gray-700 px-3 py-2 text-sm font-medium hover:bg-gray-600 disabled:opacity-30"
-				>
-					Undo
-				</button>
 			</div>
 
 			<input
