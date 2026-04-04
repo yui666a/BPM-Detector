@@ -12,24 +12,40 @@ import { WaveformView } from "@/components/WaveformView";
 import { AnalysisManager } from "@/engine/analyzer";
 import { decodeAudioFile, extractMonoData } from "@/engine/audio";
 import {
+	ANALYSIS_WINDOW_SECONDS,
+	createWindowedAnalysisMetadata,
+	offsetAnalysisResult,
+	slicePcmWindow,
+} from "@/lib/analysis";
+import {
 	analysisModeAtom,
 	isAnalyzingAtom,
 	resetAnalysisResultAtom,
+	setAnalysisMetadataAtom,
 	setAnalysisResultAtom,
 } from "@/store/analysisAtoms";
-import { resetAudioStateAtom, setLoadedAudioAtom } from "@/store/audioAtoms";
+import {
+	audioBufferAtom,
+	currentTimeAtom,
+	resetAudioStateAtom,
+	setLoadedAudioAtom,
+} from "@/store/audioAtoms";
 import { errorMessageAtom, resetUiStateAtom } from "@/store/uiAtoms";
+import type { AnalysisMetadata, AnalysisResult } from "@/types";
 
 export default function Home() {
 	const resetAudioState = useSetAtom(resetAudioStateAtom);
 	const setLoadedAudio = useSetAtom(setLoadedAudioAtom);
 	const setIsAnalyzing = useSetAtom(isAnalyzingAtom);
 	const setAnalysisResult = useSetAtom(setAnalysisResultAtom);
+	const setAnalysisMetadata = useSetAtom(setAnalysisMetadataAtom);
 	const resetAnalysisResult = useSetAtom(resetAnalysisResultAtom);
 	const resetUiState = useSetAtom(resetUiStateAtom);
 	const setErrorMessage = useSetAtom(errorMessageAtom);
 	const analysisMode = useAtomValue(analysisModeAtom);
 	const isAnalyzing = useAtomValue(isAnalyzingAtom);
+	const audioBuffer = useAtomValue(audioBufferAtom);
+	const currentTime = useAtomValue(currentTimeAtom);
 	const errorMessage = useAtomValue(errorMessageAtom);
 	const managerRef = useRef<AnalysisManager | null>(null);
 
@@ -38,6 +54,23 @@ export default function Home() {
 			managerRef.current?.terminate();
 		};
 	}, []);
+
+	const performAnalysis = useCallback(
+		async (buffer: AudioBuffer, metadata: AnalysisMetadata): Promise<AnalysisResult> => {
+			if (!managerRef.current) {
+				managerRef.current = new AnalysisManager();
+			}
+
+			const monoData = extractMonoData(buffer);
+			const pcmData =
+				metadata.scope === "window"
+					? slicePcmWindow(monoData, buffer.sampleRate, metadata.startTime, metadata.endTime)
+					: monoData;
+			const result = await managerRef.current.analyze(pcmData, buffer.sampleRate, analysisMode);
+			return offsetAnalysisResult(result, metadata.startTime);
+		},
+		[analysisMode],
+	);
 
 	const handleFileSelect = useCallback(
 		async (file: File) => {
@@ -49,14 +82,14 @@ export default function Home() {
 
 				const buffer = await decodeAudioFile(file);
 				setLoadedAudio({ buffer, fileName: file.name });
-
-				if (!managerRef.current) {
-					managerRef.current = new AnalysisManager();
-				}
-
-				const monoData = extractMonoData(buffer);
-				const result = await managerRef.current.analyze(monoData, buffer.sampleRate, analysisMode);
+				const metadata: AnalysisMetadata = {
+					scope: "full",
+					startTime: 0,
+					endTime: buffer.duration,
+				};
+				const result = await performAnalysis(buffer, metadata);
 				setErrorMessage(null);
+				setAnalysisMetadata(metadata);
 				setAnalysisResult(result);
 			} catch (error) {
 				resetAudioState();
@@ -73,16 +106,49 @@ export default function Home() {
 			}
 		},
 		[
-			analysisMode,
 			resetAnalysisResult,
 			resetAudioState,
 			resetUiState,
 			setLoadedAudio,
+			setAnalysisMetadata,
 			setIsAnalyzing,
 			setAnalysisResult,
 			setErrorMessage,
+			performAnalysis,
 		],
 	);
+
+	const handleAnalyzeAroundPlayhead = useCallback(async () => {
+		if (!audioBuffer || isAnalyzing) return;
+
+		const metadata = createWindowedAnalysisMetadata(
+			audioBuffer.duration,
+			currentTime,
+			ANALYSIS_WINDOW_SECONDS,
+		);
+
+		try {
+			setIsAnalyzing(true);
+			const result = await performAnalysis(audioBuffer, metadata);
+			setErrorMessage(null);
+			setAnalysisMetadata(metadata);
+			setAnalysisResult(result);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : "An unexpected error occurred";
+			setErrorMessage(message);
+		} finally {
+			setIsAnalyzing(false);
+		}
+	}, [
+		audioBuffer,
+		currentTime,
+		isAnalyzing,
+		performAnalysis,
+		setAnalysisMetadata,
+		setAnalysisResult,
+		setErrorMessage,
+		setIsAnalyzing,
+	]);
 
 	return (
 		<main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-6 p-6">
@@ -103,7 +169,10 @@ export default function Home() {
 
 			<WaveformView />
 
-			<PlaybackControls />
+			<PlaybackControls
+				onAnalyzeAroundPlayhead={handleAnalyzeAroundPlayhead}
+				isAnalyzing={isAnalyzing}
+			/>
 
 			<BpmGraph />
 

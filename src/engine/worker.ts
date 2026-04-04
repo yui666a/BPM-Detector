@@ -49,16 +49,58 @@ function calculateBpmCurve(times: number[]): { time: number; bpm: number }[] {
 	return curve;
 }
 
-function analyzeMusic(pcmData: Float32Array) {
+function normalizeSignal(data: Float32Array): Float32Array {
+	let peak = 0;
+	for (let i = 0; i < data.length; i++) {
+		peak = Math.max(peak, Math.abs(data[i]));
+	}
+
+	if (peak === 0) return data;
+
+	const normalized = new Float32Array(data.length);
+	for (let i = 0; i < data.length; i++) {
+		normalized[i] = data[i] / peak;
+	}
+	return normalized;
+}
+
+function emphasizePercussiveSignal(pcmData: Float32Array): Float32Array {
+	const emphasized = new Float32Array(pcmData.length);
+	let previousSample = 0;
+
+	for (let i = 0; i < pcmData.length; i++) {
+		const currentSample = pcmData[i];
+		const differentiated = currentSample - previousSample * 0.98;
+		emphasized[i] = Math.max(0, differentiated);
+		previousSample = currentSample;
+	}
+
+	return normalizeSignal(emphasized);
+}
+
+function runMusicAnalysis(signalData: Float32Array) {
 	if (!essentia) throw new Error("Essentia not initialized");
 
-	const signal = essentia.arrayToVector(pcmData);
+	const signal = essentia.arrayToVector(signalData);
 	const rhythm = essentia.RhythmExtractor2013(signal);
+	const ticks: number[] = essentia.vectorToArray(rhythm.ticks);
+
+	return {
+		bpm: rhythm.bpm as number,
+		ticks,
+		confidence: Math.min(rhythm.confidence / RHYTHM_CONFIDENCE_MAX, 1),
+	};
+}
+
+function analyzeMusic(pcmData: Float32Array) {
+	const rawAnalysis = runMusicAnalysis(pcmData);
+	const emphasizedAnalysis = runMusicAnalysis(emphasizePercussiveSignal(pcmData));
+	const rhythm =
+		emphasizedAnalysis.confidence > rawAnalysis.confidence ? emphasizedAnalysis : rawAnalysis;
 
 	const bpm: number = rhythm.bpm;
-	const ticks: number[] = essentia.vectorToArray(rhythm.ticks);
-	// RhythmExtractor2013 returns confidence on a 0–5.32 scale; normalize to 0–1
-	const confidence: number = Math.min(rhythm.confidence / RHYTHM_CONFIDENCE_MAX, 1);
+	const ticks = rhythm.ticks;
+	const confidence: number = rhythm.confidence;
 
 	const beats = ticks.map((time) => ({
 		time,

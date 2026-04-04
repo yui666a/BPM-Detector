@@ -11,7 +11,15 @@ import {
 	playbackStateAtom,
 } from "@/store/audioAtoms";
 
-export function PlaybackControls() {
+interface PlaybackControlsProps {
+	onAnalyzeAroundPlayhead?: () => void;
+	isAnalyzing?: boolean;
+}
+
+export function PlaybackControls({
+	onAnalyzeAroundPlayhead,
+	isAnalyzing = false,
+}: PlaybackControlsProps) {
 	const audioBuffer = useAtomValue(audioBufferAtom);
 	const duration = useAtomValue(durationAtom);
 	const [playbackState, setPlaybackState] = useAtom(playbackStateAtom);
@@ -76,6 +84,14 @@ export function PlaybackControls() {
 						&#9654; Play
 					</button>
 				)}
+				<button
+					type="button"
+					onClick={onAnalyzeAroundPlayhead}
+					disabled={isAnalyzing}
+					className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium hover:bg-emerald-600 disabled:opacity-50"
+				>
+					Analyze Around Playhead
+				</button>
 			</div>
 
 			<input

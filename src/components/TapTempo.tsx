@@ -4,7 +4,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 import React from "react";
 import { appendTapTime, calculateTapBpm, TAP_RESET_MS } from "@/lib/tapTempo";
 import { currentTimeAtom, playbackStateAtom } from "@/store/audioAtoms";
-import { tapMarkersAtom } from "@/store/uiAtoms";
+import { tapMarkersAtom, tapTempoBpmAtom, uiResetVersionAtom } from "@/store/uiAtoms";
 
 function isInteractiveTarget(target: EventTarget | null): boolean {
 	if (!(target instanceof HTMLElement)) return false;
@@ -21,7 +21,9 @@ export function TapTempo({ now = () => performance.now() }: TapTempoProps) {
 	const [tapTimes, setTapTimes] = React.useState<number[]>([]);
 	const currentTime = useAtomValue(currentTimeAtom);
 	const playbackState = useAtomValue(playbackStateAtom);
+	const uiResetVersion = useAtomValue(uiResetVersionAtom);
 	const setTapMarkers = useSetAtom(tapMarkersAtom);
+	const setTapTempoBpm = useSetAtom(tapTempoBpmAtom);
 
 	const getNow = React.useCallback(() => now(), [now]);
 
@@ -41,7 +43,17 @@ export function TapTempo({ now = () => performance.now() }: TapTempoProps) {
 	const clearTapTempo = React.useCallback(() => {
 		setTapTimes([]);
 		setTapMarkers([]);
-	}, [setTapMarkers]);
+		setTapTempoBpm(null);
+	}, [setTapMarkers, setTapTempoBpm]);
+
+	React.useEffect(() => {
+		setTapTempoBpm(bpm);
+	}, [bpm, setTapTempoBpm]);
+
+	React.useEffect(() => {
+		void uiResetVersion;
+		setTapTimes([]);
+	}, [uiResetVersion]);
 
 	React.useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {

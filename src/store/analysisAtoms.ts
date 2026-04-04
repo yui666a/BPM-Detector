@@ -1,5 +1,5 @@
 import { atom } from "jotai";
-import type { AnalysisMode, AnalysisResult, Beat, BpmPoint } from "@/types";
+import type { AnalysisMetadata, AnalysisMode, AnalysisResult, Beat, BpmPoint } from "@/types";
 
 export const analysisModeAtom = atom<AnalysisMode>("music");
 export const isAnalyzingAtom = atom<boolean>(false);
@@ -11,6 +11,12 @@ const EMPTY_ANALYSIS_RESULT: AnalysisResult = {
 	confidence: 0,
 	beats: [],
 	bpmCurve: [],
+};
+
+const EMPTY_ANALYSIS_METADATA: AnalysisMetadata = {
+	scope: "full",
+	startTime: 0,
+	endTime: 0,
 };
 
 function calculateBpmCurve(times: number[]): BpmPoint[] {
@@ -57,10 +63,12 @@ function recomputeAnalysisResult(beats: Beat[], confidence: number): AnalysisRes
 }
 
 const analysisResultAtom = atom<AnalysisResult>(EMPTY_ANALYSIS_RESULT);
+const analysisMetadataAtom = atom<AnalysisMetadata>(EMPTY_ANALYSIS_METADATA);
 
 export const bpmAtom = atom<number>((get) => get(analysisResultAtom).bpm);
 export const confidenceAtom = atom<number>((get) => get(analysisResultAtom).confidence);
 export const bpmCurveAtom = atom<BpmPoint[]>((get) => get(analysisResultAtom).bpmCurve);
+export const analysisMetadataValueAtom = atom<AnalysisMetadata>((get) => get(analysisMetadataAtom));
 export const beatsAtom = atom<Beat[], [BeatUpdate], void>(
 	(get) => get(analysisResultAtom).beats,
 	(get, set, update) => {
@@ -74,6 +82,11 @@ export const setAnalysisResultAtom = atom(null, (_get, set, result: AnalysisResu
 	set(analysisResultAtom, result);
 });
 
+export const setAnalysisMetadataAtom = atom(null, (_get, set, metadata: AnalysisMetadata) => {
+	set(analysisMetadataAtom, metadata);
+});
+
 export const resetAnalysisResultAtom = atom(null, (_get, set) => {
 	set(analysisResultAtom, EMPTY_ANALYSIS_RESULT);
+	set(analysisMetadataAtom, EMPTY_ANALYSIS_METADATA);
 });
