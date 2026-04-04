@@ -216,10 +216,10 @@ export function WaveformView() {
 		};
 	}, [zoom, setZoom, setScrollOffset]);
 
-	if (!audioBuffer) return null;
-
+	// Always render the canvas so refs are stable and native event listeners attach.
+	// Hide with CSS when no audio is loaded.
 	return (
-		<div ref={containerRef} className="w-full">
+		<div ref={containerRef} className={`w-full ${audioBuffer ? "" : "hidden"}`}>
 			<canvas
 				ref={canvasRef}
 				height={CANVAS_HEIGHT}
