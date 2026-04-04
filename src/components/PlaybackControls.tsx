@@ -3,6 +3,7 @@
 import { useAtom, useAtomValue } from "jotai";
 import { useCallback, useEffect, useRef } from "react";
 import { createPlayback } from "@/engine/audio";
+import { formatTime } from "@/lib/format";
 import { beatsAtom } from "@/store/analysisAtoms";
 import {
 	audioBufferAtom,
@@ -11,12 +12,6 @@ import {
 	playbackStateAtom,
 } from "@/store/audioAtoms";
 import { undoStackAtom } from "@/store/uiAtoms";
-
-function formatTime(seconds: number): string {
-	const m = Math.floor(seconds / 60);
-	const s = Math.floor(seconds % 60);
-	return `${m}:${s.toString().padStart(2, "0")}`;
-}
 
 export function PlaybackControls() {
 	const audioBuffer = useAtomValue(audioBufferAtom);

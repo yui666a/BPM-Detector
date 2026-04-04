@@ -10,13 +10,8 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
+import { formatTime } from "@/lib/format";
 import { bpmAtom, bpmCurveAtom } from "@/store/analysisAtoms";
-
-function formatTick(seconds: number): string {
-	const m = Math.floor(seconds / 60);
-	const s = Math.floor(seconds % 60);
-	return `${m}:${s.toString().padStart(2, "0")}`;
-}
 
 export function BpmGraph() {
 	const bpmCurve = useAtomValue(bpmCurveAtom);
@@ -28,11 +23,11 @@ export function BpmGraph() {
 		<div className="h-48 w-full rounded-lg bg-gray-900 p-4">
 			<ResponsiveContainer width="100%" height="100%">
 				<LineChart data={bpmCurve}>
-					<XAxis dataKey="time" tickFormatter={formatTick} stroke="#6b7280" fontSize={12} />
+					<XAxis dataKey="time" tickFormatter={formatTime} stroke="#6b7280" fontSize={12} />
 					<YAxis domain={["auto", "auto"]} stroke="#6b7280" fontSize={12} width={40} />
 					<Tooltip
 						formatter={(value: number) => [`${value.toFixed(1)} BPM`, "BPM"]}
-						labelFormatter={(label: number) => formatTick(label)}
+						labelFormatter={(label: number) => formatTime(label)}
 						contentStyle={{ backgroundColor: "#1f2937", border: "none", borderRadius: 8 }}
 					/>
 					<ReferenceLine y={bpm} stroke="#6366f1" strokeDasharray="3 3" />
