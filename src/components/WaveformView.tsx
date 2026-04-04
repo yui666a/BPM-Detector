@@ -154,17 +154,24 @@ export function WaveformView() {
 		[findBeatAtX, pushUndo, setBeats],
 	);
 
-	const handleWheel = useCallback(
-		(e: React.WheelEvent) => {
+	// Use native event listener with { passive: false } so preventDefault() works
+	// React's onWheel is passive by default and cannot prevent browser zoom
+	useEffect(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+
+		const handleWheel = (e: WheelEvent) => {
 			e.preventDefault();
 			if (e.ctrlKey || e.metaKey) {
 				setZoom((z) => Math.max(1, Math.min(z * (e.deltaY > 0 ? 0.9 : 1.1), 100)));
 			} else {
 				setScrollOffset((s) => Math.max(0, Math.min(s + e.deltaX * 0.001, 1 - 1 / zoom)));
 			}
-		},
-		[zoom, setZoom, setScrollOffset],
-	);
+		};
+
+		canvas.addEventListener("wheel", handleWheel, { passive: false });
+		return () => canvas.removeEventListener("wheel", handleWheel);
+	}, [zoom, setZoom, setScrollOffset]);
 
 	if (!audioBuffer) return null;
 
@@ -180,7 +187,6 @@ export function WaveformView() {
 				onMouseLeave={handleMouseUp}
 				onDoubleClick={handleDoubleClick}
 				onContextMenu={handleContextMenu}
-				onWheel={handleWheel}
 			/>
 		</div>
 	);
