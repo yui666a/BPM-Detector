@@ -3,6 +3,7 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useEffect, useRef } from "react";
 import { extractMonoData } from "@/engine/audio";
+import { clamp } from "@/lib/math";
 import { drawBeatMarkers, drawPlayhead, drawWaveform, xToTime } from "@/lib/waveform";
 import { beatsAtom } from "@/store/analysisAtoms";
 import { audioBufferAtom, currentTimeAtom, durationAtom } from "@/store/audioAtoms";
@@ -164,9 +165,9 @@ export function WaveformView() {
 		const handleWheel = (e: WheelEvent) => {
 			e.preventDefault();
 			if (e.ctrlKey || e.metaKey) {
-				setZoom((z) => Math.max(1, Math.min(z * (e.deltaY > 0 ? 0.9 : 1.1), 100)));
+				setZoom((z) => clamp(z * (e.deltaY > 0 ? 0.9 : 1.1), 1, 100));
 			} else {
-				setScrollOffset((s) => Math.max(0, Math.min(s + e.deltaX * 0.001, 1 - 1 / zoom)));
+				setScrollOffset((s) => clamp(s + e.deltaX * 0.001, 0, 1 - 1 / zoom));
 			}
 		};
 
@@ -193,7 +194,7 @@ export function WaveformView() {
 				const dist = getTouchDist(e);
 				if (lastPinchDist > 0) {
 					const scale = dist / lastPinchDist;
-					setZoom((z) => Math.max(1, Math.min(z * scale, 100)));
+					setZoom((z) => clamp(z * scale, 1, 100));
 				}
 				lastPinchDist = dist;
 			}
