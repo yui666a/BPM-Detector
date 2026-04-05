@@ -10,6 +10,7 @@ interface ModeEntry {
 	value: AnalysisMode;
 	label: string;
 	description: string;
+	disabled?: boolean;
 }
 
 export function ModeSelector() {
@@ -20,7 +21,7 @@ export function ModeSelector() {
 	const modes: ModeEntry[] = useMemo(
 		() => [
 			{ value: "music", label: t.modeMusic, description: t.modeMusicDesc },
-			{ value: "se", label: t.modeSE, description: t.modeSEDesc },
+			{ value: "se", label: t.modeSE, description: t.modeSEDesc, disabled: true },
 		],
 		[t],
 	);
@@ -39,10 +40,22 @@ export function ModeSelector() {
 					<button
 						key={m.value}
 						type="button"
-						onClick={() => setMode(m.value)}
+						onClick={() => {
+							if (!m.disabled) {
+								setMode(m.value);
+							}
+						}}
 						onMouseEnter={() => setHoveredMode(m.value)}
 						onMouseLeave={() => setHoveredMode(null)}
-						className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${mode === m.value ? "bg-indigo-600 text-white" : "text-gray-400 hover:text-gray-200"}`}
+						disabled={m.disabled}
+						aria-disabled={m.disabled}
+						className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+							m.disabled
+								? "cursor-not-allowed text-gray-600 opacity-50"
+								: mode === m.value
+									? "bg-indigo-600 text-white"
+									: "text-gray-400 hover:text-gray-200"
+						}`}
 					>
 						{m.label}
 					</button>
