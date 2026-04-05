@@ -75,7 +75,9 @@ export function TapTempo({ now = () => performance.now() }: TapTempoProps) {
 		<section className="rounded-xl border border-gray-800 bg-gray-950/60 p-5 text-gray-100">
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<div className="space-y-1">
-					<p className="text-sm font-medium uppercase tracking-[0.2em] text-gray-500">{t.tapTempo}</p>
+					<p className="text-sm font-medium uppercase tracking-[0.2em] text-gray-500">
+						{t.tapTempo}
+					</p>
 					<div className="flex items-baseline gap-2">
 						<span className="text-4xl font-bold tabular-nums">
 							{bpm === null ? "--" : bpm.toFixed(1)}

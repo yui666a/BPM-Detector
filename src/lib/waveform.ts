@@ -12,10 +12,23 @@ const COLORS = {
 /** Beat marker opacity range: base + confidence * range */
 const BEAT_OPACITY_BASE = 0.4;
 const BEAT_OPACITY_RANGE = 0.6;
+const MIN_WAVEFORM_BUCKETS = 512;
+const MAX_WAVEFORM_BUCKETS = 65536;
 
 export interface DownsampleResult {
 	min: Float32Array;
 	max: Float32Array;
+}
+
+export interface WaveformLevel {
+	bucketCount: number;
+	min: Float32Array;
+	max: Float32Array;
+}
+
+export interface WaveformPyramid {
+	totalSamples: number;
+	levels: WaveformLevel[];
 }
 
 export function downsample(data: Float32Array, buckets: number): DownsampleResult {
@@ -43,28 +56,165 @@ export function downsample(data: Float32Array, buckets: number): DownsampleResul
 	return { min, max };
 }
 
+function summarizeAudioBuffer(buffer: AudioBuffer, bucketCount: number): WaveformLevel {
+	const channelCount = buffer.numberOfChannels;
+	const channels = Array.from({ length: channelCount }, (_, index) => buffer.getChannelData(index));
+	const totalSamples = buffer.length;
+	const min = new Float32Array(bucketCount);
+	const max = new Float32Array(bucketCount);
+
+	for (let bucketIndex = 0; bucketIndex < bucketCount; bucketIndex++) {
+		const start = Math.floor((bucketIndex * totalSamples) / bucketCount);
+		const end = Math.min(
+			totalSamples,
+			Math.floor(((bucketIndex + 1) * totalSamples) / bucketCount),
+		);
+
+		if (end <= start) {
+			const sampleIndex = Math.min(start, totalSamples - 1);
+			let sample = 0;
+			for (let channelIndex = 0; channelIndex < channelCount; channelIndex++) {
+				sample += channels[channelIndex]?.[sampleIndex] ?? 0;
+			}
+			sample /= channelCount;
+			min[bucketIndex] = sample;
+			max[bucketIndex] = sample;
+			continue;
+		}
+
+		let lo = Infinity;
+		let hi = -Infinity;
+		for (let sampleIndex = start; sampleIndex < end; sampleIndex++) {
+			let sample = 0;
+			for (let channelIndex = 0; channelIndex < channelCount; channelIndex++) {
+				sample += channels[channelIndex]?.[sampleIndex] ?? 0;
+			}
+			sample /= channelCount;
+			if (sample < lo) lo = sample;
+			if (sample > hi) hi = sample;
+		}
+		min[bucketIndex] = lo;
+		max[bucketIndex] = hi;
+	}
+
+	return { bucketCount, min, max };
+}
+
+function downsampleLevel(level: WaveformLevel, bucketCount: number): WaveformLevel {
+	if (bucketCount >= level.bucketCount) {
+		return {
+			bucketCount: level.bucketCount,
+			min: new Float32Array(level.min),
+			max: new Float32Array(level.max),
+		};
+	}
+
+	const min = new Float32Array(bucketCount);
+	const max = new Float32Array(bucketCount);
+
+	for (let bucketIndex = 0; bucketIndex < bucketCount; bucketIndex++) {
+		const start = Math.floor((bucketIndex * level.bucketCount) / bucketCount);
+		const end = Math.min(
+			level.bucketCount,
+			Math.floor(((bucketIndex + 1) * level.bucketCount) / bucketCount),
+		);
+		let lo = Infinity;
+		let hi = -Infinity;
+
+		for (let sampleIndex = start; sampleIndex < end; sampleIndex++) {
+			if (level.min[sampleIndex] < lo) lo = level.min[sampleIndex];
+			if (level.max[sampleIndex] > hi) hi = level.max[sampleIndex];
+		}
+
+		min[bucketIndex] = lo;
+		max[bucketIndex] = hi;
+	}
+
+	return { bucketCount, min, max };
+}
+
+export function buildWaveformPyramid(buffer: AudioBuffer): WaveformPyramid {
+	const totalSamples = buffer.length;
+	if (totalSamples === 0) {
+		return { totalSamples: 0, levels: [] };
+	}
+
+	const highestBucketCount = Math.min(
+		MAX_WAVEFORM_BUCKETS,
+		Math.max(MIN_WAVEFORM_BUCKETS, totalSamples),
+	);
+	const highestResolution = summarizeAudioBuffer(buffer, highestBucketCount);
+	const levels: WaveformLevel[] = [highestResolution];
+	let currentLevel = highestResolution;
+
+	while (currentLevel.bucketCount > MIN_WAVEFORM_BUCKETS) {
+		const nextBucketCount = Math.max(
+			MIN_WAVEFORM_BUCKETS,
+			Math.floor(currentLevel.bucketCount / 2),
+		);
+		if (nextBucketCount === currentLevel.bucketCount) break;
+		currentLevel = downsampleLevel(currentLevel, nextBucketCount);
+		levels.unshift(currentLevel);
+	}
+
+	return { totalSamples, levels };
+}
+
+export function selectWaveformLevel(
+	pyramid: WaveformPyramid,
+	width: number,
+	zoom: number,
+): WaveformLevel | null {
+	if (pyramid.levels.length === 0) return null;
+
+	const targetBucketCount = Math.max(Math.ceil(width * zoom), MIN_WAVEFORM_BUCKETS);
+	return (
+		pyramid.levels.find((level) => level.bucketCount >= targetBucketCount) ??
+		pyramid.levels[pyramid.levels.length - 1] ??
+		null
+	);
+}
+
 export function drawWaveform(
 	ctx: CanvasRenderingContext2D,
-	data: Float32Array,
+	pyramid: WaveformPyramid,
 	width: number,
 	height: number,
 	zoom: number,
 	scrollOffset: number,
 ) {
-	const visibleSamples = Math.floor(data.length / zoom);
-	const startSample = Math.floor(scrollOffset * data.length);
-	const endSample = Math.min(startSample + visibleSamples, data.length);
-	const slice = data.slice(startSample, endSample);
-	const { min, max } = downsample(slice, width);
+	const level = selectWaveformLevel(pyramid, width, zoom);
+	if (!level) return;
+
+	const visibleBuckets = Math.max(1, Math.ceil(level.bucketCount / zoom));
+	const maxStartBucket = Math.max(0, level.bucketCount - visibleBuckets);
+	const startBucket = Math.min(maxStartBucket, Math.floor(scrollOffset * level.bucketCount));
+	const endBucket = Math.min(level.bucketCount, startBucket + visibleBuckets);
 
 	ctx.clearRect(0, 0, width, height);
 	ctx.fillStyle = COLORS.waveform;
 	const mid = height / 2;
 
-	for (let i = 0; i < min.length; i++) {
-		const yMin = mid - max[i] * mid;
-		const yMax = mid - min[i] * mid;
-		ctx.fillRect(i, yMin, 1, Math.max(1, yMax - yMin));
+	for (let x = 0; x < width; x++) {
+		const bucketStart = startBucket + Math.floor((x * visibleBuckets) / width);
+		const bucketEnd = startBucket + Math.ceil(((x + 1) * visibleBuckets) / width);
+		let lo = Infinity;
+		let hi = -Infinity;
+
+		for (
+			let bucketIndex = bucketStart;
+			bucketIndex < Math.min(bucketEnd, endBucket);
+			bucketIndex++
+		) {
+			if (level.min[bucketIndex] < lo) lo = level.min[bucketIndex];
+			if (level.max[bucketIndex] > hi) hi = level.max[bucketIndex];
+		}
+
+		if (!Number.isFinite(lo) || !Number.isFinite(hi)) continue;
+
+		const yMin = mid - hi * mid;
+		const yMax = mid - lo * mid;
+		ctx.fillRect(x, yMin, 1, Math.max(1, yMax - yMin));
 	}
 }
 

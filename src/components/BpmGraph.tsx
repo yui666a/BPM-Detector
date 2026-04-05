@@ -44,8 +44,6 @@ export function BpmGraph() {
 
 	const showPlayhead = currentTime > 0 && currentTime >= xDomain[0] && currentTime <= xDomain[1];
 
-	if (bpmCurve.length === 0) return null;
-
 	return (
 		<div ref={containerRef} className="h-40 w-full rounded-lg bg-gray-900 py-2">
 			<ResponsiveContainer width="100%" height="100%">
@@ -79,4 +77,14 @@ export function BpmGraph() {
 			</ResponsiveContainer>
 		</div>
 	);
+}
+
+/**
+ * Wrapper that defers mounting until bpmCurve has data,
+ * so useCanvasGesture's useEffect runs after the DOM element exists.
+ */
+export function BpmGraphContainer() {
+	const bpmCurve = useAtomValue(bpmCurveAtom);
+	if (bpmCurve.length === 0) return null;
+	return <BpmGraph />;
 }

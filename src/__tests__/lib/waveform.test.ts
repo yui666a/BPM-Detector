@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { downsample, drawTapMarkers } from "@/lib/waveform";
+import {
+	buildWaveformPyramid,
+	downsample,
+	drawTapMarkers,
+	drawWaveform,
+	selectWaveformLevel,
+} from "@/lib/waveform";
 
 describe("downsample", () => {
 	it("reduces sample count to target bucket count", () => {
@@ -44,5 +50,68 @@ describe("drawTapMarkers", () => {
 		expect(ctx.moveTo).toHaveBeenNthCalledWith(2, 300, 0);
 		expect(ctx.lineTo).toHaveBeenNthCalledWith(1, 100, 200);
 		expect(ctx.lineTo).toHaveBeenNthCalledWith(2, 300, 200);
+	});
+});
+
+describe("buildWaveformPyramid", () => {
+	it("builds multiple waveform levels from an AudioBuffer", () => {
+		const channelA = Float32Array.from({ length: 4096 }, (_, index) => Math.sin(index / 16));
+		const channelB = Float32Array.from({ length: 4096 }, (_, index) => Math.cos(index / 16) * 0.5);
+		const buffer = {
+			length: 4096,
+			numberOfChannels: 2,
+			getChannelData: vi.fn((channel: number) => (channel === 0 ? channelA : channelB)),
+		} as unknown as AudioBuffer;
+
+		const pyramid = buildWaveformPyramid(buffer);
+
+		expect(pyramid.totalSamples).toBe(4096);
+		expect(pyramid.levels.length).toBeGreaterThan(1);
+		expect(pyramid.levels[0]?.bucketCount).toBe(512);
+		expect(pyramid.levels.at(-1)?.bucketCount).toBe(4096);
+	});
+});
+
+describe("selectWaveformLevel", () => {
+	it("selects a level that matches the current zoom density", () => {
+		const pyramid = {
+			totalSamples: 4096,
+			levels: [
+				{ bucketCount: 512, min: new Float32Array(512), max: new Float32Array(512) },
+				{ bucketCount: 1024, min: new Float32Array(1024), max: new Float32Array(1024) },
+				{ bucketCount: 2048, min: new Float32Array(2048), max: new Float32Array(2048) },
+			],
+		};
+
+		expect(selectWaveformLevel(pyramid, 400, 1)?.bucketCount).toBe(512);
+		expect(selectWaveformLevel(pyramid, 400, 2)?.bucketCount).toBe(1024);
+		expect(selectWaveformLevel(pyramid, 400, 8)?.bucketCount).toBe(2048);
+	});
+});
+
+describe("drawWaveform", () => {
+	it("renders from a precomputed waveform pyramid", () => {
+		const clearRect = vi.fn();
+		const fillRect = vi.fn();
+		const ctx = {
+			clearRect,
+			fillRect,
+			fillStyle: "",
+		} as unknown as CanvasRenderingContext2D;
+		const pyramid = {
+			totalSamples: 1024,
+			levels: [
+				{
+					bucketCount: 512,
+					min: new Float32Array(512).fill(-0.5),
+					max: new Float32Array(512).fill(0.5),
+				},
+			],
+		};
+
+		drawWaveform(ctx, pyramid, 100, 50, 1, 0);
+
+		expect(clearRect).toHaveBeenCalledWith(0, 0, 100, 50);
+		expect(fillRect).toHaveBeenCalledTimes(100);
 	});
 });

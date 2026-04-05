@@ -1,5 +1,5 @@
 import { atom } from "jotai";
-import { DEFAULT_LOCALE, type Dictionary, type Locale, dictionaries } from "@/i18n";
+import { DEFAULT_LOCALE, type Dictionary, dictionaries, type Locale } from "@/i18n";
 
 export const localeAtom = atom<Locale>(DEFAULT_LOCALE);
 

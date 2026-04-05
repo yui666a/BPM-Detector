@@ -2,11 +2,10 @@
 
 import { useAtom, useAtomValue } from "jotai";
 import { useCallback, useEffect, useRef } from "react";
-import { extractMonoData } from "@/engine/audio";
 import { useCanvasGesture } from "@/hooks/useCanvasGesture";
 import { drawBeatMarkers, drawPlayhead, drawTapMarkers, drawWaveform } from "@/lib/waveform";
 import { beatsAtom } from "@/store/analysisAtoms";
-import { audioBufferAtom, currentTimeAtom, durationAtom } from "@/store/audioAtoms";
+import { currentTimeAtom, durationAtom, waveformPyramidAtom } from "@/store/audioAtoms";
 import { scrollOffsetAtom, tapMarkersAtom, zoomAtom } from "@/store/uiAtoms";
 
 const CANVAS_HEIGHT = 200;
@@ -14,27 +13,18 @@ const CANVAS_HEIGHT = 200;
 export function WaveformView() {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
-	const audioBuffer = useAtomValue(audioBufferAtom);
+	const waveformPyramid = useAtomValue(waveformPyramidAtom);
 	const duration = useAtomValue(durationAtom);
 	const currentTime = useAtomValue(currentTimeAtom);
 	const beats = useAtomValue(beatsAtom);
 	const tapMarkers = useAtomValue(tapMarkersAtom);
 	const [zoom, setZoom] = useAtom(zoomAtom);
 	const [scrollOffset, setScrollOffset] = useAtom(scrollOffsetAtom);
-	const monoDataRef = useRef<Float32Array | null>(null);
-
-	useEffect(() => {
-		if (audioBuffer) {
-			monoDataRef.current = extractMonoData(audioBuffer);
-		} else {
-			monoDataRef.current = null;
-		}
-	}, [audioBuffer]);
 
 	// --- Drawing ---
 	const draw = useCallback(() => {
 		const canvas = canvasRef.current;
-		if (!canvas || !monoDataRef.current) return;
+		if (!canvas || !waveformPyramid) return;
 		const ctx = canvas.getContext("2d");
 		if (!ctx) return;
 
@@ -42,11 +32,11 @@ export function WaveformView() {
 		const height = canvas.height;
 
 		ctx.clearRect(0, 0, width, height);
-		drawWaveform(ctx, monoDataRef.current, width, height, zoom, scrollOffset);
+		drawWaveform(ctx, waveformPyramid, width, height, zoom, scrollOffset);
 		drawBeatMarkers(ctx, beats, duration, width, height, zoom, scrollOffset);
 		drawTapMarkers(ctx, tapMarkers, duration, width, height, zoom, scrollOffset);
 		drawPlayhead(ctx, currentTime, duration, width, height, zoom, scrollOffset);
-	}, [beats, currentTime, duration, scrollOffset, tapMarkers, zoom]);
+	}, [beats, currentTime, duration, scrollOffset, tapMarkers, waveformPyramid, zoom]);
 
 	useEffect(() => {
 		const rafId = requestAnimationFrame(draw);
@@ -73,7 +63,7 @@ export function WaveformView() {
 	useCanvasGesture(canvasRef, zoom, setZoom, setScrollOffset);
 
 	return (
-		<div ref={containerRef} className={`w-full ${audioBuffer ? "" : "hidden"}`}>
+		<div ref={containerRef} className={`w-full ${waveformPyramid ? "" : "hidden"}`}>
 			<canvas ref={canvasRef} height={CANVAS_HEIGHT} className="w-full rounded-lg bg-gray-900" />
 		</div>
 	);

@@ -42,7 +42,7 @@ export function PlaybackControls({
 
 	const handlePlay = useCallback(() => {
 		if (!playbackRef.current) return;
-		playbackRef.current.play(currentTime);
+		void playbackRef.current.play(currentTime);
 		setPlaybackState("playing");
 	}, [currentTime, setPlaybackState]);
 
@@ -58,7 +58,7 @@ export function PlaybackControls({
 			setCurrentTime(time);
 			playbackRef.current?.seek(time);
 			if (playbackState === "playing") {
-				playbackRef.current?.play(time);
+				void playbackRef.current?.play(time);
 			}
 		},
 		[playbackState, setCurrentTime],

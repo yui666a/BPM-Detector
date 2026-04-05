@@ -41,7 +41,11 @@ export function createPlayback(
 	buffer: AudioBuffer,
 	onTimeUpdate: (time: number) => void,
 	onEnded: () => void,
-): { play: (startTime?: number) => void; stop: () => void; seek: (time: number) => void } {
+): {
+	play: (startTime?: number) => Promise<void>;
+	stop: () => void;
+	seek: (time: number) => void;
+} {
 	const ctx = getAudioContext();
 	let source: AudioBufferSourceNode | null = null;
 	let startOffset = 0;
@@ -56,8 +60,11 @@ export function createPlayback(
 		rafId = requestAnimationFrame(tick);
 	}
 
-	function play(seekTime?: number) {
+	async function play(seekTime?: number) {
 		stop();
+		if (ctx.state === "suspended") {
+			await ctx.resume();
+		}
 		source = ctx.createBufferSource();
 		source.buffer = buffer;
 		source.connect(ctx.destination);

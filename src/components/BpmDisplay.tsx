@@ -62,9 +62,7 @@ export function BpmDisplay() {
 				</div>
 				<div className="mt-3 flex flex-wrap gap-2 text-sm text-gray-400">
 					<span className="rounded-full bg-gray-900 px-3 py-1">{scopeLabel}</span>
-					<span className="rounded-full bg-gray-900 px-3 py-1">
-						{confidenceText}
-					</span>
+					<span className="rounded-full bg-gray-900 px-3 py-1">{confidenceText}</span>
 				</div>
 			</div>
 		</div>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-	DEFAULT_ANALYSIS_WINDOW_SECONDS,
 	createWindowedAnalysisMetadata,
+	DEFAULT_ANALYSIS_WINDOW_SECONDS,
 	getConfidenceLabel,
 	offsetAnalysisResult,
 	slicePcmWindow,
