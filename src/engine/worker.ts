@@ -92,11 +92,32 @@ function runMusicAnalysis(signalData: Float32Array) {
 	};
 }
 
-function analyzeMusic(pcmData: Float32Array) {
+function analyzeMusic(pcmData: Float32Array, sampleRate: number) {
 	const rawAnalysis = runMusicAnalysis(pcmData);
 	const emphasizedAnalysis = runMusicAnalysis(emphasizePercussiveSignal(pcmData));
 	const rhythm =
 		emphasizedAnalysis.confidence > rawAnalysis.confidence ? emphasizedAnalysis : rawAnalysis;
+
+	console.log("[music-analysis]", {
+		rhythmExtractor2013: {
+			bpm: rawAnalysis.bpm,
+			confidence: rawAnalysis.confidence,
+			ticks: rawAnalysis.ticks.length,
+			sampleRate,
+		},
+		emphasized: {
+			bpm: emphasizedAnalysis.bpm,
+			confidence: emphasizedAnalysis.confidence,
+			ticks: emphasizedAnalysis.ticks.length,
+		},
+		selected: {
+			source:
+				emphasizedAnalysis.confidence > rawAnalysis.confidence ? "emphasized" : "rhythm-extractor",
+			bpm: rhythm.bpm,
+			confidence: rhythm.confidence,
+			ticks: rhythm.ticks.length,
+		},
+	});
 
 	const bpm: number = rhythm.bpm;
 	const ticks = rhythm.ticks;
@@ -169,7 +190,7 @@ self.onmessage = async (event: MessageEvent) => {
 			await init();
 		} else if (type === "ANALYZE") {
 			if (mode === "music") {
-				analyzeMusic(pcmData);
+				analyzeMusic(pcmData, sampleRate);
 			} else {
 				analyzeSE(pcmData, sampleRate);
 			}

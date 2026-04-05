@@ -21,9 +21,12 @@ export function extractMonoData(buffer: AudioBuffer): Float32Array {
 
 let audioContext: AudioContext | null = null;
 
+/** Essentia's RhythmExtractor2013 / BeatTrackerMultiFeature assume 44100 Hz internally */
+const ANALYSIS_SAMPLE_RATE = 44100;
+
 function getAudioContext(): AudioContext {
 	if (!audioContext) {
-		audioContext = new AudioContext();
+		audioContext = new AudioContext({ sampleRate: ANALYSIS_SAMPLE_RATE });
 	}
 	return audioContext;
 }
