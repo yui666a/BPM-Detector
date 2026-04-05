@@ -1,7 +1,7 @@
 "use client";
 
-import { useAtomValue } from "jotai";
-import { useMemo } from "react";
+import { useAtom, useAtomValue } from "jotai";
+import { useMemo, useRef } from "react";
 import {
 	Line,
 	LineChart,
@@ -11,6 +11,7 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
+import { useCanvasGesture } from "@/hooks/useCanvasGesture";
 import { formatTime } from "@/lib/format";
 import { bpmAtom, bpmCurveAtom } from "@/store/analysisAtoms";
 import { currentTimeAtom, durationAtom } from "@/store/audioAtoms";
@@ -19,10 +20,13 @@ import { scrollOffsetAtom, zoomAtom } from "@/store/uiAtoms";
 export function BpmGraph() {
 	const bpmCurve = useAtomValue(bpmCurveAtom);
 	const bpm = useAtomValue(bpmAtom);
-	const zoom = useAtomValue(zoomAtom);
-	const scrollOffset = useAtomValue(scrollOffsetAtom);
+	const [zoom, setZoom] = useAtom(zoomAtom);
+	const [scrollOffset, setScrollOffset] = useAtom(scrollOffsetAtom);
 	const duration = useAtomValue(durationAtom);
 	const currentTime = useAtomValue(currentTimeAtom);
+	const containerRef = useRef<HTMLDivElement>(null);
+
+	useCanvasGesture(containerRef, zoom, setZoom, setScrollOffset);
 
 	const { visibleCurve, xDomain } = useMemo(() => {
 		if (bpmCurve.length === 0 || duration === 0) {
@@ -41,7 +45,7 @@ export function BpmGraph() {
 	if (bpmCurve.length === 0) return null;
 
 	return (
-		<div className="h-40 w-full rounded-lg bg-gray-900 py-2">
+		<div ref={containerRef} className="h-40 w-full rounded-lg bg-gray-900 py-2">
 			<ResponsiveContainer width="100%" height="100%">
 				<LineChart data={visibleCurve} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
 					<XAxis

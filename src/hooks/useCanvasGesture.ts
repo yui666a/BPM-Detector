@@ -7,11 +7,11 @@ const ZOOM_MAX = 100;
 const SCROLL_SPEED = 0.001;
 
 /**
- * Attaches wheel and touch pinch-to-zoom gestures to a canvas element.
+ * Attaches wheel and touch pinch-to-zoom gestures to an element.
  * Uses native event listeners with { passive: false } to prevent browser zoom.
  */
 export function useCanvasGesture(
-	canvasRef: RefObject<HTMLCanvasElement | null>,
+	canvasRef: RefObject<HTMLElement | null>,
 	zoom: number,
 	setZoom: (fn: (z: number) => number) => void,
 	setScrollOffset: (fn: (s: number) => number) => void,
