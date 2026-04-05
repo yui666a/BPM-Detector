@@ -1,26 +1,26 @@
 import type { AnalysisMetadata, AnalysisResult } from "@/types";
 
-export const ANALYSIS_WINDOW_SECONDS = 20;
+export const DEFAULT_ANALYSIS_WINDOW_SECONDS = 20;
 
 export function createWindowedAnalysisMetadata(
 	duration: number,
-	centerTime: number,
-	windowSeconds = ANALYSIS_WINDOW_SECONDS,
+	startFrom: number,
+	windowSeconds = DEFAULT_ANALYSIS_WINDOW_SECONDS,
 ): AnalysisMetadata {
 	if (duration <= 0) {
 		return { scope: "full", startTime: 0, endTime: 0 };
 	}
 
-	if (duration <= windowSeconds) {
+	const remaining = duration - startFrom;
+	if (remaining <= 0) {
 		return { scope: "full", startTime: 0, endTime: duration };
 	}
 
-	const halfWindow = windowSeconds / 2;
-	const unclampedStart = centerTime - halfWindow;
-	const startTime = Math.max(0, Math.min(unclampedStart, duration - windowSeconds));
-	const endTime = Math.min(duration, startTime + windowSeconds);
+	if (remaining <= windowSeconds) {
+		return { scope: "window", startTime: startFrom, endTime: duration };
+	}
 
-	return { scope: "window", startTime, endTime };
+	return { scope: "window", startTime: startFrom, endTime: startFrom + windowSeconds };
 }
 
 export function offsetAnalysisResult(result: AnalysisResult, offsetTime: number): AnalysisResult {

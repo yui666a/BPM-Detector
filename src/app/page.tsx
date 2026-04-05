@@ -12,7 +12,6 @@ import { WaveformView } from "@/components/WaveformView";
 import { AnalysisManager } from "@/engine/analyzer";
 import { decodeAudioFile, extractMonoData } from "@/engine/audio";
 import {
-	ANALYSIS_WINDOW_SECONDS,
 	createWindowedAnalysisMetadata,
 	offsetAnalysisResult,
 	slicePcmWindow,
@@ -118,13 +117,13 @@ export default function Home() {
 		],
 	);
 
-	const handleAnalyzeAroundPlayhead = useCallback(async () => {
+	const handleAnalyzeFromPlayhead = useCallback(async (windowSeconds: number) => {
 		if (!audioBuffer || isAnalyzing) return;
 
 		const metadata = createWindowedAnalysisMetadata(
 			audioBuffer.duration,
 			currentTime,
-			ANALYSIS_WINDOW_SECONDS,
+			windowSeconds,
 		);
 
 		try {
@@ -170,7 +169,7 @@ export default function Home() {
 			<WaveformView />
 
 			<PlaybackControls
-				onAnalyzeAroundPlayhead={handleAnalyzeAroundPlayhead}
+				onAnalyzeFromPlayhead={handleAnalyzeFromPlayhead}
 				isAnalyzing={isAnalyzing}
 			/>
 

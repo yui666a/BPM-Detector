@@ -21,15 +21,15 @@ describe("TapTempo", () => {
 		expect(screen.getByText("120.0")).toBeTruthy();
 	});
 
-	it("measures bpm from Enter key presses", () => {
+	it("measures bpm from Space key presses", () => {
 		const tapTimes = [0, 600, 1200];
 		let tapIndex = 0;
 
 		render(React.createElement(TapTempo, { now: () => tapTimes[tapIndex++] ?? 0 }));
 
-		fireEvent.keyDown(window, { key: "Enter" });
-		fireEvent.keyDown(window, { key: "Enter" });
-		fireEvent.keyDown(window, { key: "Enter" });
+		fireEvent.keyDown(window, { key: " " });
+		fireEvent.keyDown(window, { key: " " });
+		fireEvent.keyDown(window, { key: " " });
 
 		expect(screen.getByText("100.0")).toBeTruthy();
 	});

@@ -57,7 +57,7 @@ export function TapTempo({ now = () => performance.now() }: TapTempoProps) {
 
 	React.useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
-			if (event.key !== "Enter" || event.repeat || isInteractiveTarget(event.target)) {
+			if (event.key !== " " || event.repeat || isInteractiveTarget(event.target)) {
 				return;
 			}
 
@@ -81,7 +81,7 @@ export function TapTempo({ now = () => performance.now() }: TapTempoProps) {
 						<span className="text-lg text-gray-400">BPM</span>
 					</div>
 					<p className="text-sm text-gray-400">
-						ボタンを連続で押すか Enter キーを叩くと、間隔から BPM を計測します。
+						ボタンを連続で押すか Space キーを叩くと、間隔から BPM を計測します。
 					</p>
 					<p className="text-xs text-gray-500">
 						{Math.round(TAP_RESET_MS / 1000)}秒以上空くと計測を自動でリセットします。

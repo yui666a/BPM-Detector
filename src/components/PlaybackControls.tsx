@@ -1,8 +1,9 @@
 "use client";
 
 import { useAtom, useAtomValue } from "jotai";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPlayback } from "@/engine/audio";
+import { DEFAULT_ANALYSIS_WINDOW_SECONDS } from "@/lib/analysis";
 import { formatTime } from "@/lib/format";
 import {
 	audioBufferAtom,
@@ -12,12 +13,12 @@ import {
 } from "@/store/audioAtoms";
 
 interface PlaybackControlsProps {
-	onAnalyzeAroundPlayhead?: () => void;
+	onAnalyzeFromPlayhead?: (windowSeconds: number) => void;
 	isAnalyzing?: boolean;
 }
 
 export function PlaybackControls({
-	onAnalyzeAroundPlayhead,
+	onAnalyzeFromPlayhead,
 	isAnalyzing = false,
 }: PlaybackControlsProps) {
 	const audioBuffer = useAtomValue(audioBufferAtom);
@@ -62,16 +63,18 @@ export function PlaybackControls({
 		[playbackState, setCurrentTime],
 	);
 
+	const [windowSeconds, setWindowSeconds] = useState(DEFAULT_ANALYSIS_WINDOW_SECONDS);
+
 	if (!audioBuffer) return null;
 
 	return (
-		<div className="flex items-center gap-4">
-			<div className="flex gap-2">
+		<div className="flex flex-col gap-3">
+			<div className="flex items-center gap-4">
 				{playbackState === "playing" ? (
 					<button
 						type="button"
 						onClick={handleStop}
-						className="rounded-lg bg-gray-700 px-4 py-2 text-sm font-medium hover:bg-gray-600"
+						className="shrink-0 rounded-lg bg-gray-700 px-4 py-2 text-sm font-medium hover:bg-gray-600"
 					>
 						&#9632; Stop
 					</button>
@@ -79,34 +82,47 @@ export function PlaybackControls({
 					<button
 						type="button"
 						onClick={handlePlay}
-						className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium hover:bg-indigo-500"
+						className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium hover:bg-indigo-500"
 					>
 						&#9654; Play
 					</button>
 				)}
-				<button
-					type="button"
-					onClick={onAnalyzeAroundPlayhead}
-					disabled={isAnalyzing}
-					className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium hover:bg-emerald-600 disabled:opacity-50"
-				>
-					Analyze Around Playhead
-				</button>
+
+				<input
+					type="range"
+					min={0}
+					max={duration}
+					step={0.01}
+					value={currentTime}
+					onChange={handleSeek}
+					className="flex-1"
+				/>
+
+				<span className="min-w-[5rem] shrink-0 text-right text-sm tabular-nums text-gray-400">
+					{formatTime(currentTime)} / {formatTime(duration)}
+				</span>
 			</div>
 
-			<input
-				type="range"
-				min={0}
-				max={duration}
-				step={0.01}
-				value={currentTime}
-				onChange={handleSeek}
-				className="flex-1"
-			/>
-
-			<span className="min-w-[5rem] text-right text-sm tabular-nums text-gray-400">
-				{formatTime(currentTime)} / {formatTime(duration)}
-			</span>
+			<div className="flex items-center gap-2">
+				<button
+					type="button"
+					onClick={() => onAnalyzeFromPlayhead?.(windowSeconds)}
+					disabled={isAnalyzing}
+					className="shrink-0 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium hover:bg-emerald-600 disabled:opacity-50"
+				>
+					Analyze Next
+				</button>
+				<input
+					type="number"
+					min={5}
+					max={120}
+					step={5}
+					value={windowSeconds}
+					onChange={(e) => setWindowSeconds(Math.max(5, Number(e.target.value)))}
+					className="w-16 rounded-lg border border-gray-700 bg-gray-900 px-2 py-2 text-center text-sm tabular-nums text-gray-200"
+				/>
+				<span className="text-sm text-gray-400">sec</span>
+			</div>
 		</div>
 	);
 }

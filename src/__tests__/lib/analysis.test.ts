@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-	ANALYSIS_WINDOW_SECONDS,
+	DEFAULT_ANALYSIS_WINDOW_SECONDS,
 	createWindowedAnalysisMetadata,
 	getConfidenceLabel,
 	offsetAnalysisResult,
@@ -9,19 +9,27 @@ import {
 import type { AnalysisResult } from "@/types";
 
 describe("createWindowedAnalysisMetadata", () => {
-	it("returns a centered analysis window when the track is long enough", () => {
+	it("returns a window starting from the playhead position", () => {
 		expect(createWindowedAnalysisMetadata(120, 50)).toEqual({
 			scope: "window",
-			startTime: 40,
-			endTime: 40 + ANALYSIS_WINDOW_SECONDS,
+			startTime: 50,
+			endTime: 50 + DEFAULT_ANALYSIS_WINDOW_SECONDS,
 		});
 	});
 
-	it("falls back to full-track analysis for short files", () => {
-		expect(createWindowedAnalysisMetadata(12, 6)).toEqual({
+	it("clamps to track end when remaining time is shorter than window", () => {
+		expect(createWindowedAnalysisMetadata(55, 50)).toEqual({
+			scope: "window",
+			startTime: 50,
+			endTime: 55,
+		});
+	});
+
+	it("falls back to full-track when playhead is at the end", () => {
+		expect(createWindowedAnalysisMetadata(120, 120)).toEqual({
 			scope: "full",
 			startTime: 0,
-			endTime: 12,
+			endTime: 120,
 		});
 	});
 });
