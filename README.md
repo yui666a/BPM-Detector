@@ -4,6 +4,8 @@
 
 Essentia.js（WASM）による自動 BPM 推定と、Tap Tempo による手動計測を並べて比較できます。
 
+<img width="996" height="1213" alt="image" src="https://github.com/user-attachments/assets/e2a2d71f-ab97-4839-865c-1f5c8c6eb223" />
+
 ## 主な機能
 
 - **BPM 自動検出** — Essentia.js の RhythmExtractor2013 による自動テンポ推定
