@@ -5,12 +5,14 @@ import { useCallback, useEffect, useRef } from "react";
 import { BpmDisplay } from "@/components/BpmDisplay";
 import { BpmGraph } from "@/components/BpmGraph";
 import { FileDropZone } from "@/components/FileDropZone";
+import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { ModeSelector } from "@/components/ModeSelector";
 import { PlaybackControls } from "@/components/PlaybackControls";
 import { TapTempo } from "@/components/TapTempo";
 import { WaveformView } from "@/components/WaveformView";
 import { AnalysisManager } from "@/engine/analyzer";
 import { decodeAudioFile, extractMonoData } from "@/engine/audio";
+import { useT } from "@/hooks/useT";
 import {
 	createWindowedAnalysisMetadata,
 	offsetAnalysisResult,
@@ -29,10 +31,15 @@ import {
 	resetAudioStateAtom,
 	setLoadedAudioAtom,
 } from "@/store/audioAtoms";
+import { detectLocale } from "@/i18n";
+import { localeAtom } from "@/store/i18nAtom";
 import { errorMessageAtom, resetUiStateAtom } from "@/store/uiAtoms";
 import type { AnalysisMetadata, AnalysisResult } from "@/types";
 
 export default function Home() {
+	const t = useT();
+	const locale = useAtomValue(localeAtom);
+	const setLocale = useSetAtom(localeAtom);
 	const resetAudioState = useSetAtom(resetAudioStateAtom);
 	const setLoadedAudio = useSetAtom(setLoadedAudioAtom);
 	const setIsAnalyzing = useSetAtom(isAnalyzingAtom);
@@ -49,10 +56,15 @@ export default function Home() {
 	const managerRef = useRef<AnalysisManager | null>(null);
 
 	useEffect(() => {
+		setLocale(detectLocale());
 		return () => {
 			managerRef.current?.terminate();
 		};
-	}, []);
+	}, [setLocale]);
+
+	useEffect(() => {
+		document.documentElement.lang = locale;
+	}, [locale]);
 
 	const performAnalysis = useCallback(
 		async (buffer: AudioBuffer, metadata: AnalysisMetadata): Promise<AnalysisResult> => {
@@ -95,10 +107,10 @@ export default function Home() {
 				resetAnalysisResult();
 				const message =
 					error instanceof DOMException
-						? "This file format is not supported"
+						? t.unsupportedFormat
 						: error instanceof Error
 							? error.message
-							: "An unexpected error occurred";
+							: t.unexpectedError;
 				setErrorMessage(message);
 			} finally {
 				setIsAnalyzing(false);
@@ -133,7 +145,7 @@ export default function Home() {
 			setAnalysisMetadata(metadata);
 			setAnalysisResult(result);
 		} catch (error) {
-			const message = error instanceof Error ? error.message : "An unexpected error occurred";
+			const message = error instanceof Error ? error.message : t.unexpectedError;
 			setErrorMessage(message);
 		} finally {
 			setIsAnalyzing(false);
@@ -152,7 +164,10 @@ export default function Home() {
 	return (
 		<main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-6 p-6">
 			<header className="flex items-center justify-between">
-				<h1 className="text-2xl font-bold">BPM Detector</h1>
+				<div className="flex items-center gap-3">
+					<h1 className="text-2xl font-bold">{t.title}</h1>
+					<LocaleSwitcher />
+				</div>
 				<ModeSelector />
 			</header>
 

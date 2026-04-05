@@ -12,12 +12,14 @@ import {
 	YAxis,
 } from "recharts";
 import { useCanvasGesture } from "@/hooks/useCanvasGesture";
+import { useT } from "@/hooks/useT";
 import { formatTime } from "@/lib/format";
 import { bpmAtom, bpmCurveAtom } from "@/store/analysisAtoms";
 import { currentTimeAtom, durationAtom } from "@/store/audioAtoms";
 import { scrollOffsetAtom, zoomAtom } from "@/store/uiAtoms";
 
 export function BpmGraph() {
+	const t = useT();
 	const bpmCurve = useAtomValue(bpmCurveAtom);
 	const bpm = useAtomValue(bpmAtom);
 	const [zoom, setZoom] = useAtom(zoomAtom);
@@ -59,7 +61,7 @@ export function BpmGraph() {
 					/>
 					<YAxis domain={["auto", "auto"]} hide />
 					<Tooltip
-						formatter={(value: number) => [`${value.toFixed(1)} BPM`, "BPM"]}
+						formatter={(value: number) => [`${value.toFixed(1)} ${t.bpmUnit}`, t.bpmUnit]}
 						labelFormatter={(label: number) => formatTime(label)}
 						contentStyle={{ backgroundColor: "#1f2937", border: "none", borderRadius: 8 }}
 					/>

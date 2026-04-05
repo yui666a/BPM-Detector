@@ -1,28 +1,31 @@
 "use client";
 
 import { useAtom } from "jotai";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useT } from "@/hooks/useT";
 import { analysisModeAtom } from "@/store/analysisAtoms";
 import type { AnalysisMode } from "@/types";
 
-const modes: { value: AnalysisMode; label: string; description: string }[] = [
-	{
-		value: "music",
-		label: "Music",
-		description: "ドラム/ベースなどビートがある音楽向け（RhythmExtractor2013）",
-	},
-	{
-		value: "se",
-		label: "SE / SFX",
-		description: "パルス的な音のタイミングからパターンの周期性を推定（エネルギーベース）",
-	},
-];
-
-const fallbackMode = modes[0];
+interface ModeEntry {
+	value: AnalysisMode;
+	label: string;
+	description: string;
+}
 
 export function ModeSelector() {
+	const t = useT();
 	const [mode, setMode] = useAtom(analysisModeAtom);
 	const [hoveredMode, setHoveredMode] = useState<AnalysisMode | null>(null);
+
+	const modes: ModeEntry[] = useMemo(
+		() => [
+			{ value: "music", label: t.modeMusic, description: t.modeMusicDesc },
+			{ value: "se", label: t.modeSE, description: t.modeSEDesc },
+		],
+		[t],
+	);
+
+	const fallbackMode = modes[0];
 	const activeMode = modes.find((m) => m.value === mode) ?? fallbackMode;
 	const hoveredDescription = hoveredMode
 		? (modes.find((m) => m.value === hoveredMode)?.description ?? fallbackMode.description)

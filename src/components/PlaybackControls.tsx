@@ -3,6 +3,7 @@
 import { useAtom, useAtomValue } from "jotai";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPlayback } from "@/engine/audio";
+import { useT } from "@/hooks/useT";
 import { DEFAULT_ANALYSIS_WINDOW_SECONDS } from "@/lib/analysis";
 import { formatTime } from "@/lib/format";
 import {
@@ -63,6 +64,7 @@ export function PlaybackControls({
 		[playbackState, setCurrentTime],
 	);
 
+	const t = useT();
 	const [windowSeconds, setWindowSeconds] = useState(DEFAULT_ANALYSIS_WINDOW_SECONDS);
 
 	if (!audioBuffer) return null;
@@ -76,7 +78,7 @@ export function PlaybackControls({
 						onClick={handleStop}
 						className="shrink-0 rounded-lg bg-gray-700 px-4 py-2 text-sm font-medium hover:bg-gray-600"
 					>
-						&#9632; Stop
+						&#9632; {t.stop}
 					</button>
 				) : (
 					<button
@@ -84,7 +86,7 @@ export function PlaybackControls({
 						onClick={handlePlay}
 						className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium hover:bg-indigo-500"
 					>
-						&#9654; Play
+						&#9654; {t.play}
 					</button>
 				)}
 
@@ -103,15 +105,8 @@ export function PlaybackControls({
 				</span>
 			</div>
 
-			<div className="flex items-center gap-2">
-				<button
-					type="button"
-					onClick={() => onAnalyzeFromPlayhead?.(windowSeconds)}
-					disabled={isAnalyzing}
-					className="shrink-0 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium hover:bg-emerald-600 disabled:opacity-50"
-				>
-					Analyze Next
-				</button>
+			<div className="flex items-center gap-2 text-sm text-gray-400">
+				<span>{t.analyzePrefix}</span>
 				<input
 					type="number"
 					min={5}
@@ -121,7 +116,15 @@ export function PlaybackControls({
 					onChange={(e) => setWindowSeconds(Math.max(5, Number(e.target.value)))}
 					className="w-16 rounded-lg border border-gray-700 bg-gray-900 px-2 py-2 text-center text-sm tabular-nums text-gray-200"
 				/>
-				<span className="text-sm text-gray-400">sec</span>
+				<span>{t.analyzeSuffix}</span>
+				<button
+					type="button"
+					onClick={() => onAnalyzeFromPlayhead?.(windowSeconds)}
+					disabled={isAnalyzing}
+					className="shrink-0 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-gray-100 hover:bg-emerald-600 disabled:opacity-50"
+				>
+					{t.analyzeButton}
+				</button>
 			</div>
 		</div>
 	);
