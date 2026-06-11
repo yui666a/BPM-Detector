@@ -1,17 +1,16 @@
 import type { NextConfig } from "next";
 
-const isProd = process.env.NODE_ENV === "production";
-const repositoryName = process.env.GITHUB_REPOSITORY?.split("/")[1];
 const devWatchIgnores = [
 	"**/.git/**",
 	"**/.next/**",
 	"**/node_modules/**",
 	"**/.playwright-mcp/**",
 ];
+// Served from a custom domain (bpm-detector.yui666a.me) at the root, so there is
+// no repository-name basePath. Set NEXT_PUBLIC_BASE_PATH / BASE_PATH only if you
+// need to deploy back under a project subpath (e.g. /BPM-Detector).
 const basePath =
-	process.env.NEXT_PUBLIC_BASE_PATH ??
-	process.env.BASE_PATH ??
-	(isProd && repositoryName ? `/${repositoryName}` : "");
+	process.env.NEXT_PUBLIC_BASE_PATH ?? process.env.BASE_PATH ?? "";
 
 const nextConfig: NextConfig = {
 	output: "export",
