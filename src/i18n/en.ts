@@ -35,6 +35,7 @@ const en: Dictionary = {
 	tapButton: "Tap",
 	tapInstruction: "Press the button repeatedly or hit the Space key to measure BPM from intervals.",
 	tapResetNotice: (seconds: number) => `Resets automatically after ${seconds}s of inactivity.`,
+	tapWindowLabel: (count: number) => `Measure from last ${count} taps`,
 	clear: "Clear",
 
 	// BpmGraph tooltip

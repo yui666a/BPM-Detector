@@ -35,6 +35,7 @@ const ja: Dictionary = {
 	tapButton: "クリック",
 	tapInstruction: "ボタンを連続で押すか Space キーを叩くと、間隔から BPM を計測します。",
 	tapResetNotice: (seconds: number) => `${seconds}秒以上空くと計測を自動でリセットします。`,
+	tapWindowLabel: (count: number) => `最新 ${count} タップで測定`,
 	clear: "クリア",
 
 	// BpmGraph tooltip
