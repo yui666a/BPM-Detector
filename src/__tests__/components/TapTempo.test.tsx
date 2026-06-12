@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { TapTempo } from "@/components/TapTempo";
 import { currentTimeAtom, playbackStateAtom } from "@/store/audioAtoms";
 import { localeAtom } from "@/store/i18nAtom";
-import { tapMarkersAtom } from "@/store/uiAtoms";
+import { maxTapsAtom, tapMarkersAtom } from "@/store/uiAtoms";
 
 function createEnglishStore() {
 	const store = createStore();
@@ -90,5 +90,39 @@ describe("TapTempo", () => {
 
 		expect(screen.getByText("--")).toBeTruthy();
 		expect(store.get(tapMarkersAtom)).toEqual([]);
+	});
+
+	it("renders the tap window label from maxTapsAtom", () => {
+		const store = createEnglishStore();
+		store.set(maxTapsAtom, 5);
+
+		render(
+			React.createElement(Provider, { store }, React.createElement(TapTempo, { now: () => 0 })),
+		);
+
+		expect(screen.getByText("Measure from last 5 taps")).toBeTruthy();
+	});
+
+	it("updates maxTapsAtom and resets tap history when the slider changes", () => {
+		const tapTimes = [0, 500];
+		let tapIndex = 0;
+		const store = createEnglishStore();
+
+		render(
+			React.createElement(
+				Provider,
+				{ store },
+				React.createElement(TapTempo, { now: () => tapTimes[tapIndex++] ?? 0 }),
+			),
+		);
+
+		fireEvent.click(screen.getByRole("button", { name: "Tap" }));
+		fireEvent.click(screen.getByRole("button", { name: "Tap" }));
+		expect(screen.getByText("120.0")).toBeTruthy();
+
+		fireEvent.change(screen.getByRole("slider"), { target: { value: "4" } });
+
+		expect(store.get(maxTapsAtom)).toBe(4);
+		expect(screen.getByText("--")).toBeTruthy();
 	});
 });

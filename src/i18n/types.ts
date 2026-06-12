@@ -25,6 +25,7 @@ export interface Dictionary {
 	tapButton: string;
 	tapInstruction: string;
 	tapResetNotice: (seconds: number) => string;
+	tapWindowLabel: (count: number) => string;
 	clear: string;
 	bpmUnit: string;
 	unsupportedFormat: string;

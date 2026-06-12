@@ -1,9 +1,11 @@
 import { atom } from "jotai";
+import { MAX_TAPS } from "@/lib/tapTempo";
 
 export const zoomAtom = atom<number>(1);
 export const scrollOffsetAtom = atom<number>(0);
 export const tapMarkersAtom = atom<number[]>([]);
 export const tapTempoBpmAtom = atom<number | null>(null);
+export const maxTapsAtom = atom<number>(MAX_TAPS);
 export const uiResetVersionAtom = atom<number>(0);
 
 export const errorMessageAtom = atom<string | null>(null);

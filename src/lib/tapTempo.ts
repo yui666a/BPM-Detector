@@ -1,5 +1,7 @@
 const TAP_RESET_MS = 2000;
 const MAX_TAPS = 8;
+const MIN_MAX_TAPS = 2;
+const MAX_MAX_TAPS = 16;
 
 export function appendTapTime(
 	previousTapTimes: number[],
@@ -33,4 +35,4 @@ export function calculateTapBpm(tapTimes: number[]): number | null {
 	return 60000 / averageInterval;
 }
 
-export { MAX_TAPS, TAP_RESET_MS };
+export { MAX_MAX_TAPS, MAX_TAPS, MIN_MAX_TAPS, TAP_RESET_MS };

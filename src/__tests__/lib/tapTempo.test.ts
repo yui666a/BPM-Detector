@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { appendTapTime, calculateTapBpm, MAX_TAPS, TAP_RESET_MS } from "@/lib/tapTempo";
+import {
+	appendTapTime,
+	calculateTapBpm,
+	MAX_MAX_TAPS,
+	MAX_TAPS,
+	MIN_MAX_TAPS,
+	TAP_RESET_MS,
+} from "@/lib/tapTempo";
 
 describe("appendTapTime", () => {
 	it("appends taps while the rhythm is continuous", () => {
@@ -13,6 +20,17 @@ describe("appendTapTime", () => {
 	it("keeps only the most recent taps", () => {
 		const taps = Array.from({ length: MAX_TAPS }, (_, index) => index * 500);
 		expect(appendTapTime(taps, MAX_TAPS * 500)).toHaveLength(MAX_TAPS);
+	});
+
+	it("honors a custom maxTaps and keeps only that many", () => {
+		const taps = Array.from({ length: 10 }, (_, index) => index * 500);
+		expect(appendTapTime(taps, 5000, TAP_RESET_MS, 4)).toHaveLength(4);
+	});
+
+	it("exposes a 2..16 settable range with default 8", () => {
+		expect(MIN_MAX_TAPS).toBe(2);
+		expect(MAX_MAX_TAPS).toBe(16);
+		expect(MAX_TAPS).toBe(8);
 	});
 });
 

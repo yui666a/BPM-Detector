@@ -1,11 +1,17 @@
 "use client";
 
-import { useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import React from "react";
 import { useT } from "@/hooks/useT";
-import { appendTapTime, calculateTapBpm, TAP_RESET_MS } from "@/lib/tapTempo";
+import {
+	appendTapTime,
+	calculateTapBpm,
+	MAX_MAX_TAPS,
+	MIN_MAX_TAPS,
+	TAP_RESET_MS,
+} from "@/lib/tapTempo";
 import { currentTimeAtom, playbackStateAtom } from "@/store/audioAtoms";
-import { tapMarkersAtom, tapTempoBpmAtom, uiResetVersionAtom } from "@/store/uiAtoms";
+import { maxTapsAtom, tapMarkersAtom, tapTempoBpmAtom, uiResetVersionAtom } from "@/store/uiAtoms";
 
 function isInteractiveTarget(target: EventTarget | null): boolean {
 	if (!(target instanceof HTMLElement)) return false;
@@ -26,17 +32,20 @@ export function TapTempo({ now = () => performance.now() }: TapTempoProps) {
 	const uiResetVersion = useAtomValue(uiResetVersionAtom);
 	const setTapMarkers = useSetAtom(tapMarkersAtom);
 	const setTapTempoBpm = useSetAtom(tapTempoBpmAtom);
+	const [maxTaps, setMaxTaps] = useAtom(maxTapsAtom);
 
 	const getNow = React.useCallback(() => now(), [now]);
 
 	const registerTap = React.useCallback(
 		(tapTime = getNow()) => {
-			setTapTimes((previousTapTimes) => appendTapTime(previousTapTimes, tapTime));
+			setTapTimes((previousTapTimes) =>
+				appendTapTime(previousTapTimes, tapTime, TAP_RESET_MS, maxTaps),
+			);
 			if (playbackState === "playing") {
 				setTapMarkers((previousMarkers) => [...previousMarkers, currentTime]);
 			}
 		},
-		[currentTime, getNow, playbackState, setTapMarkers],
+		[currentTime, getNow, maxTaps, playbackState, setTapMarkers],
 	);
 
 	const bpm = React.useMemo(() => calculateTapBpm(tapTimes), [tapTimes]);
@@ -47,6 +56,14 @@ export function TapTempo({ now = () => performance.now() }: TapTempoProps) {
 		setTapMarkers([]);
 		setTapTempoBpm(null);
 	}, [setTapMarkers, setTapTempoBpm]);
+
+	const handleMaxTapsChange = React.useCallback(
+		(event: React.ChangeEvent<HTMLInputElement>) => {
+			setMaxTaps(Number(event.target.value));
+			clearTapTempo();
+		},
+		[clearTapTempo, setMaxTaps],
+	);
 
 	React.useEffect(() => {
 		setTapTempoBpm(bpm);
@@ -88,6 +105,21 @@ export function TapTempo({ now = () => performance.now() }: TapTempoProps) {
 					<p className="text-xs text-gray-500">
 						{t.tapResetNotice(Math.round(TAP_RESET_MS / 1000))}
 					</p>
+					<div className="space-y-1 pt-2">
+						<label htmlFor="tap-window" className="block text-xs text-gray-400">
+							{t.tapWindowLabel(maxTaps)}
+						</label>
+						<input
+							id="tap-window"
+							type="range"
+							min={MIN_MAX_TAPS}
+							max={MAX_MAX_TAPS}
+							step={1}
+							value={maxTaps}
+							onChange={handleMaxTapsChange}
+							className="w-full accent-amber-500"
+						/>
+					</div>
 				</div>
 
 				<div className="flex gap-3">
